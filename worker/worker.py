@@ -111,6 +111,16 @@ FLIGHT_PROVIDER_TIMEOUT_SECONDS = load_positive_float(
 )
 FLIGHT_POLL_MIN_SECONDS = load_positive_float("FLIGHT_POLL_MIN_SECONDS", 0.05)
 FLIGHT_POLL_MAX_SECONDS = load_positive_float("FLIGHT_POLL_MAX_SECONDS", 0.5)
+SINGLEFLIGHT_FAULT_HOOKS_ENABLED = (
+    os.getenv("SINGLEFLIGHT_FAULT_HOOKS_ENABLED", "") == "benchmark-only"
+)
+SINGLEFLIGHT_FAULT_PHASE = os.getenv("SINGLEFLIGHT_FAULT_PHASE", "")
+SINGLEFLIGHT_FAULT_GENERATION = load_positive_int(
+    "SINGLEFLIGHT_FAULT_GENERATION", 1
+)
+SINGLEFLIGHT_FAULT_PAUSE_SECONDS = load_non_negative_float(
+    "SINGLEFLIGHT_FAULT_PAUSE_SECONDS", 0.0
+)
 
 
 def increment_metric(client, key):
@@ -126,6 +136,31 @@ def process_demo_task(job):
     return {
         "message": "Job completed successfully"
     }
+
+def _singleflight_fault_pause(phase, generation, request_id, job_id):
+    if (
+        not SINGLEFLIGHT_FAULT_HOOKS_ENABLED
+        or phase not in {
+            "after_acquire_before_provider",
+            "during_provider",
+            "after_commit_before_finish",
+        }
+        or SINGLEFLIGHT_FAULT_PHASE != phase
+        or generation != SINGLEFLIGHT_FAULT_GENERATION
+        or SINGLEFLIGHT_FAULT_PAUSE_SECONDS <= 0
+    ):
+        return
+    log_event(
+        logger,
+        "singleflight_fault_pause",
+        level=logging.WARNING,
+        request_id=request_id,
+        job_id=job_id,
+        phase=phase,
+        generation=generation,
+        pause_seconds=SINGLEFLIGHT_FAULT_PAUSE_SECONDS,
+    )
+    time.sleep(SINGLEFLIGHT_FAULT_PAUSE_SECONDS)
 
 def _format_top_matches(top_matches):
     return [
@@ -216,6 +251,13 @@ def _run_flight_leader(
             increment_metric(client, "metrics:flight_fencing_rejections")
         return _cache_hit_result(prompt, provider, recheck, recheck_matches)
 
+    _singleflight_fault_pause(
+        "after_acquire_before_provider",
+        acquisition.generation,
+        request_id,
+        job_id,
+    )
+
     renewer = FlightLeaseRenewer(
         client=client,
         flight_key=flight_key,
@@ -231,6 +273,12 @@ def _run_flight_leader(
         provider_start = time.perf_counter()
         increment_metric(client, "metrics:provider_call_count")
         try:
+            _singleflight_fault_pause(
+                "during_provider",
+                acquisition.generation,
+                request_id,
+                job_id,
+            )
             response = generate_response(prompt, provider=provider)
         finally:
             provider_latency_ms = int((time.perf_counter() - provider_start) * 1000)
@@ -272,6 +320,12 @@ def _run_flight_leader(
 
         if use_faiss:
             add_to_faiss(entry)
+        _singleflight_fault_pause(
+            "after_commit_before_finish",
+            acquisition.generation,
+            request_id,
+            job_id,
+        )
         return {
             "prompt": prompt,
             "provider": provider,

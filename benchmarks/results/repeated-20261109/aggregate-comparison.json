@@ -1,0 +1,230 @@
+{
+  "files": {
+    "baseline": [
+      "baseline-run-01.json",
+      "baseline-run-02.json",
+      "baseline-run-03.json",
+      "baseline-run-04.json",
+      "baseline-run-05.json"
+    ],
+    "singleflight": [
+      "singleflight-run-01.json",
+      "singleflight-run-02.json",
+      "singleflight-run-03.json",
+      "singleflight-run-04.json",
+      "singleflight-run-05.json"
+    ]
+  },
+  "median_duration_delta_ms": 292.14850097196177,
+  "median_duration_delta_percent": 19.35762809609544,
+  "request_count": 100,
+  "runs_per_variant": 5,
+  "schema_version": 1,
+  "variants": {
+    "baseline": {
+      "aof_size_bytes": {
+        "count": 5,
+        "max": 303692,
+        "median": 303684,
+        "min": 303681,
+        "stdev": 4.029888335921977
+      },
+      "completed_jobs": {
+        "count": 5,
+        "max": 100,
+        "median": 100,
+        "min": 100,
+        "stdev": 0.0
+      },
+      "duration_ms": {
+        "count": 5,
+        "max": 1683.4051249898039,
+        "median": 1509.2164159868844,
+        "min": 1337.0958340237848,
+        "stdev": 113.45048798596746
+      },
+      "failed_jobs": {
+        "count": 5,
+        "max": 0,
+        "median": 0,
+        "min": 0,
+        "stdev": 0.0
+      },
+      "flight_wait_ms": {
+        "count": 5,
+        "max": 0,
+        "median": 0,
+        "min": 0,
+        "stdev": 0.0
+      },
+      "followers": {
+        "count": 5,
+        "max": 0,
+        "median": 0,
+        "min": 0,
+        "stdev": 0.0
+      },
+      "leaders": {
+        "count": 5,
+        "max": 0,
+        "median": 0,
+        "min": 0,
+        "stdev": 0.0
+      },
+      "max_memory_bytes": {
+        "count": 0,
+        "max": null,
+        "median": null,
+        "min": null,
+        "stdev": null
+      },
+      "median_cpu_percent": {
+        "count": 0,
+        "max": null,
+        "median": null,
+        "min": null,
+        "stdev": null
+      },
+      "p50_ms": {
+        "count": 5,
+        "max": 1420.8085204882082,
+        "median": 1332.857499975944,
+        "min": 1180.6722085166257,
+        "stdev": 85.89234523177473
+      },
+      "p95_ms": {
+        "count": 5,
+        "max": 1634.663674668991,
+        "median": 1468.4643128246535,
+        "min": 1285.1046874769963,
+        "stdev": 116.27823334488771
+      },
+      "p99_ms": {
+        "count": 5,
+        "max": 1647.1711262699682,
+        "median": 1474.6200820396189,
+        "min": 1296.2774091109168,
+        "stdev": 114.52547032518352
+      },
+      "provider_calls": {
+        "count": 5,
+        "max": 4,
+        "median": 4,
+        "min": 4,
+        "stdev": 0.0
+      },
+      "publications": {
+        "count": 5,
+        "max": 0,
+        "median": 0,
+        "min": 0,
+        "stdev": 0.0
+      }
+    },
+    "singleflight": {
+      "aof_size_bytes": {
+        "count": 5,
+        "max": 305549,
+        "median": 305548,
+        "min": 305546,
+        "stdev": 1.3564659966250536
+      },
+      "completed_jobs": {
+        "count": 5,
+        "max": 100,
+        "median": 100,
+        "min": 100,
+        "stdev": 0.0
+      },
+      "duration_ms": {
+        "count": 5,
+        "max": 1899.8302919790149,
+        "median": 1801.3649169588462,
+        "min": 1666.8936249916442,
+        "stdev": 86.44754905898105
+      },
+      "failed_jobs": {
+        "count": 5,
+        "max": 0,
+        "median": 0,
+        "min": 0,
+        "stdev": 0.0
+      },
+      "flight_wait_ms": {
+        "count": 5,
+        "max": 4310,
+        "median": 4194,
+        "min": 4073,
+        "stdev": 75.59523794525684
+      },
+      "followers": {
+        "count": 5,
+        "max": 3,
+        "median": 3,
+        "min": 3,
+        "stdev": 0.0
+      },
+      "leaders": {
+        "count": 5,
+        "max": 1,
+        "median": 1,
+        "min": 1,
+        "stdev": 0.0
+      },
+      "max_memory_bytes": {
+        "count": 0,
+        "max": null,
+        "median": null,
+        "min": null,
+        "stdev": null
+      },
+      "median_cpu_percent": {
+        "count": 0,
+        "max": null,
+        "median": null,
+        "min": null,
+        "stdev": null
+      },
+      "p50_ms": {
+        "count": 5,
+        "max": 1715.6830834865104,
+        "median": 1626.8326249846723,
+        "min": 1454.8478125070687,
+        "stdev": 102.55961146382447
+      },
+      "p95_ms": {
+        "count": 5,
+        "max": 1833.525355681195,
+        "median": 1730.2416684047785,
+        "min": 1617.841200667317,
+        "stdev": 89.16378760490903
+      },
+      "p99_ms": {
+        "count": 5,
+        "max": 1842.2954502643552,
+        "median": 1744.002274973318,
+        "min": 1622.5092567439424,
+        "stdev": 90.17860914408787
+      },
+      "provider_calls": {
+        "count": 5,
+        "max": 1,
+        "median": 1,
+        "min": 1,
+        "stdev": 0.0
+      },
+      "publications": {
+        "count": 5,
+        "max": 1,
+        "median": 1,
+        "min": 1,
+        "stdev": 0.0
+      }
+    }
+  },
+  "worker_count": 4,
+  "workload_revisions": {
+    "baseline": "c960af328b06ac93a8cb6ad2a026b1156d2d63b6",
+    "singleflight": "7bec46bb575772559b95948b4edd299ad8b0cfb9"
+  }
+}

@@ -9,7 +9,7 @@ from unittest.mock import patch
 from redis_clone.client import FlightAcquireResult, FlightState
 from redis_clone.server import Server
 from worker.singleflight import FlightOwnershipLost, FlightWaitTimeout, derive_flight_key
-from worker.worker import process_inference
+from worker.worker import _singleflight_fault_pause, process_inference
 
 
 def _bytes(value):
@@ -170,6 +170,28 @@ class WorkerSingleFlightTests(unittest.TestCase):
     def make_server(self, tmpdir):
         return Server(port=0, aof_file=f"{tmpdir}/appendonly.aof")
 
+    def test_fault_pause_requires_explicit_benchmark_only_arming(self):
+        with (
+            patch("worker.worker.SINGLEFLIGHT_FAULT_HOOKS_ENABLED", False),
+            patch("worker.worker.SINGLEFLIGHT_FAULT_PHASE", "during_provider"),
+            patch("worker.worker.SINGLEFLIGHT_FAULT_PAUSE_SECONDS", 10),
+            patch("worker.worker.time.sleep") as sleeper,
+        ):
+            _singleflight_fault_pause("during_provider", 1, "request", "job")
+
+        sleeper.assert_not_called()
+
+    def test_fault_pause_rejects_unknown_phase_even_when_armed(self):
+        with (
+            patch("worker.worker.SINGLEFLIGHT_FAULT_HOOKS_ENABLED", True),
+            patch("worker.worker.SINGLEFLIGHT_FAULT_PHASE", "unknown"),
+            patch("worker.worker.SINGLEFLIGHT_FAULT_PAUSE_SECONDS", 10),
+            patch("worker.worker.time.sleep") as sleeper,
+        ):
+            _singleflight_fault_pause("unknown", 1, "request", "job")
+
+        sleeper.assert_not_called()
+
     def test_healthy_concurrent_misses_execute_provider_once(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             server = self.make_server(tmpdir)
@@ -274,14 +296,14 @@ class WorkerSingleFlightTests(unittest.TestCase):
             client = CountingRenewClient(server)
 
             def slow_provider(prompt, provider="fake"):
-                time.sleep(0.08)
+                time.sleep(0.25)
                 return {"answer": "renewed"}
 
             with (
                 patch("worker.worker.get_embedding", return_value=[1.0, 0.0]),
                 patch("worker.worker.generate_response", side_effect=slow_provider),
                 patch("worker.worker.DEMO_INFERENCE_DELAY_SECONDS", 0),
-                patch("worker.worker.FLIGHT_LEASE_MS", 30),
+                patch("worker.worker.FLIGHT_LEASE_MS", 100),
             ):
                 result = process_inference({"prompt": "renew", "provider": "fake"}, client)
 

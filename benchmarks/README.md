@@ -44,3 +44,50 @@ docker compose -f docker-compose.benchmark.yml down
 The reported latencies are client-observed submission-to-terminal-state times.
 They include HTTP submission, queueing, worker execution, and polling delay.
 Host scheduling, Docker resources, and the polling interval affect the values.
+
+## Step 3 repeated, failure, and queue-interference verification
+
+The Step 3 harnesses use a unique Compose project for every case. They call
+`docker compose down` without `--volumes`, preserving each isolated AOF volume
+for inspection and never flushing a development or production datastore.
+
+Run five equivalent baseline and single-flight samples (the baseline source is
+an exported tree at commit `c960af3`):
+
+```bash
+python3 benchmarks/run_repeated_stampede.py \
+  --baseline-source /path/to/exported-c960af3 \
+  --singleflight-source . \
+  --baseline-revision c960af328b06ac93a8cb6ad2a026b1156d2d63b6 \
+  --singleflight-revision 7bec46bb575772559b95948b4edd299ad8b0cfb9 \
+  --benchmark-script benchmarks/benchmark_stampede.py \
+  --output-dir benchmarks/results/repeated-YYYYMMDD \
+  --runs 5 --requests 100
+```
+
+Run the deterministic process-kill campaign. The override enables fault pauses
+only in the isolated worker containers; the hooks are disabled by default:
+
+```bash
+python3 benchmarks/run_singleflight_faults.py \
+  --compose-file docker-compose.benchmark.yml \
+  --fault-compose-file docker-compose.fault.yml \
+  --output benchmarks/results/faults-YYYYMMDD.json
+```
+
+Run three control/mixed pairs to measure whether synchronous followers delay
+unrelated jobs. Each mixed run queues 20 identical requests before four unique
+unrelated requests; each control run contains only the four unrelated jobs:
+
+```bash
+python3 benchmarks/benchmark_mixed_workload.py \
+  --compose-file docker-compose.benchmark.yml \
+  --output benchmarks/results/hol-YYYYMMDD.json \
+  --runs 3 --duplicate-requests 20 --unrelated-requests 4
+```
+
+These are coordination and queue-behavior workloads, not semantic-quality
+evaluations. Docker CPU snapshots are point-in-time observations; short runs
+may finish before a useful sample is returned. Provider execution remains
+at-least-once across worker crashes even though fenced publication accepts at
+most one current generation.

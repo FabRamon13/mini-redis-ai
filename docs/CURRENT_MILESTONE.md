@@ -1,6 +1,6 @@
 # Current Milestone — Week 1: Baseline and Cache Stampede Prevention
 
-Status: Repository audit, baseline reconciliation, stampede baseline, and Step 2 distributed request coalescing are implemented and locally verified. Step 2 remains uncommitted and pending engineering review.
+Status: **Week 1 accepted and complete.** The baseline is preserved at `c960af3`, the integrated single-flight implementation at `7bec46b`, and the accepted reliability/performance evidence in `docs/WEEK1_STEP3_VERIFICATION.md` plus `benchmarks/results/repeated-20261109/`, `benchmarks/results/faults-20261109.json`, and `benchmarks/results/hol-20261109.json`.
 Historical target: October 13–19, 2026; current work is continuing beyond that original window. Do not treat historic dates as completion evidence.
 
 ## Objective
@@ -36,4 +36,4 @@ Demonstrate a reproducible concurrency race with multiple worker processes, then
 - Metrics, documentation, diagrams and README updated only when verified.
 
 ## Next development session
-Review the Step 2 atomic publication, worker integration, failure tests, metrics and four-worker evidence. Do not advance into later v2 milestones until this implementation is accepted.
+Design Week 2 backpressure and reliability work. Prioritize eliminating synchronous-follower head-of-line blocking and adding bounded datastore socket I/O; defer AOF compaction while retaining it as documented technical debt. Preserve Week 1 job IDs, durable queue semantics, claim-token fencing, and single-flight guarantees.

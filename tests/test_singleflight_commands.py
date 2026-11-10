@@ -390,6 +390,21 @@ class SingleFlightCommandTests(unittest.TestCase):
             self.assertNotIn(b"flight", server._flights)
             self.assertEqual(server.get(b"semantic_cache:new"), b'{"entry_id":"new"}')
 
+    def test_many_terminal_flights_are_removed_in_one_throttled_cleanup_pass(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            clock = FakeClock()
+            server = self.make_server(tmpdir, clock)
+            for index in range(100):
+                key = f"flight-{index}".encode()
+                owner = f"owner-{index}".encode()
+                generation = server.flight_acquire(key, owner, b"1000")["generation"]
+                server.flight_release(key, owner, str(generation).encode())
+
+            self.assertEqual(len(server._flights), 100)
+            clock.advance_ms(server.FLIGHT_TERMINAL_RETENTION_MS)
+            self.assertIsNone(server.flight_status(b"cleanup-trigger"))
+            self.assertEqual(server._flights, {})
+
     def test_flush_clears_flights_but_does_not_reuse_generation(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             server = self.make_server(tmpdir)

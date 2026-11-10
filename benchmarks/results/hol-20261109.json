@@ -1,0 +1,1219 @@
+{
+  "aggregate": {
+    "scenarios": {
+      "control": {
+        "provider_calls": {
+          "count": 3,
+          "max": 4,
+          "median": 4,
+          "min": 4,
+          "stdev": 0.0
+        },
+        "unrelated_completion_p50_ms": {
+          "count": 3,
+          "max": 1099.606,
+          "median": 1044.249,
+          "min": 1044.1264999999999,
+          "stdev": 26.124461452184388
+        },
+        "unrelated_queue_wait_p50_ms": {
+          "count": 3,
+          "max": 71.84,
+          "median": 37.853,
+          "min": 24.8545,
+          "stdev": 19.80940960895997
+        }
+      },
+      "mixed": {
+        "provider_calls": {
+          "count": 3,
+          "max": 5,
+          "median": 5,
+          "min": 5,
+          "stdev": 0.0
+        },
+        "unrelated_completion_p50_ms": {
+          "count": 3,
+          "max": 2430.9365,
+          "median": 2364.281,
+          "min": 2357.715,
+          "stdev": 33.0781164627343
+        },
+        "unrelated_queue_wait_p50_ms": {
+          "count": 3,
+          "max": 1420.5320000000002,
+          "median": 1351.561,
+          "min": 1342.4925,
+          "stdev": 34.847923728203256
+        }
+      }
+    },
+    "unrelated_completion_median_delta_ms": 1320.032,
+    "unrelated_completion_median_ratio": 2.2640969730399547
+  },
+  "environment": {
+    "docker_compose_version": "Docker Compose version v5.1.3",
+    "docker_version": "Docker version 29.5.2, build 79eb04c",
+    "git_commit": "7bec46bb575772559b95948b4edd299ad8b0cfb9",
+    "machine": "arm64",
+    "platform": "macOS-26.2-arm64-arm-64bit",
+    "python_version": "3.11.9"
+  },
+  "generated_at": "2026-11-10T02:18:01.414331+00:00",
+  "results": [
+    {
+      "configuration": {
+        "duplicate_requests": 0,
+        "inference_delay_seconds": 1,
+        "unrelated_requests": 4,
+        "workers": 4
+      },
+      "duplicates": {
+        "completed": 0,
+        "completion_ms": {
+          "max": null,
+          "p50": null,
+          "p95": null
+        },
+        "count": 0,
+        "failed": 0,
+        "queue_wait_ms": {
+          "max": null,
+          "p50": null,
+          "p95": null
+        }
+      },
+      "jobs": [
+        {
+          "cache": "miss",
+          "completion_ms": 1018.3340000000001,
+          "job_id": "8cf1f4b5-650a-4756-93ac-17f2e94263a5",
+          "queue_wait_ms": 9.471,
+          "status": "completed"
+        },
+        {
+          "cache": "miss",
+          "completion_ms": 1032.598,
+          "job_id": "23d737b4-b130-4173-82bc-eef337a1b890",
+          "queue_wait_ms": 26.741,
+          "status": "completed"
+        },
+        {
+          "cache": "miss",
+          "completion_ms": 1055.655,
+          "job_id": "61a5421a-aeb8-4e27-bf7c-9cd3f5169f90",
+          "queue_wait_ms": 48.965,
+          "status": "completed"
+        },
+        {
+          "cache": "miss",
+          "completion_ms": 1056.406,
+          "job_id": "3ed3bcde-31be-4350-84ec-10f9eefb4bcf",
+          "queue_wait_ms": 49.349,
+          "status": "completed"
+        }
+      ],
+      "metric_deltas": {
+        "dead_jobs": 0,
+        "failed_jobs": 0,
+        "flight_cache_recheck_hits": 0,
+        "flight_failed": 0,
+        "flight_fencing_rejections": 0,
+        "flight_follower_wait_ms_total": 0,
+        "flight_followers_joined": 0,
+        "flight_leaders_acquired": 4,
+        "flight_publications": 4,
+        "flight_takeovers": 0,
+        "flight_timeouts": 0,
+        "linear_search_count": 4,
+        "processed_jobs": 4,
+        "provider_call_count": 4,
+        "semantic_cache_hits": 0,
+        "semantic_cache_misses": 4
+      },
+      "project": "mini-redis-hol-20261109-control-01",
+      "recorded_at": "2026-11-10T02:17:13.753451+00:00",
+      "resource_snapshot": [
+        {
+          "cpu_percent": "0.35%",
+          "memory_usage": "36.06MiB / 3.827GiB",
+          "name": "mini-redis-hol-20261109-control-01-api-1"
+        },
+        {
+          "cpu_percent": "2.27%",
+          "memory_usage": "10.54MiB / 3.827GiB",
+          "name": "mini-redis-hol-20261109-control-01-redis_clone-1"
+        },
+        {
+          "cpu_percent": "0.84%",
+          "memory_usage": "22.1MiB / 3.827GiB",
+          "name": "mini-redis-hol-20261109-control-01-worker-1"
+        },
+        {
+          "cpu_percent": "0.73%",
+          "memory_usage": "22.11MiB / 3.827GiB",
+          "name": "mini-redis-hol-20261109-control-01-worker-2"
+        },
+        {
+          "cpu_percent": "0.62%",
+          "memory_usage": "22.1MiB / 3.827GiB",
+          "name": "mini-redis-hol-20261109-control-01-worker-3"
+        },
+        {
+          "cpu_percent": "0.83%",
+          "memory_usage": "22.11MiB / 3.827GiB",
+          "name": "mini-redis-hol-20261109-control-01-worker-4"
+        }
+      ],
+      "run_number": 1,
+      "scenario": "control",
+      "unrelated": {
+        "completed": 4,
+        "completion_ms": {
+          "max": 1056.406,
+          "p50": 1044.1264999999999,
+          "p95": 1056.29335
+        },
+        "count": 4,
+        "failed": 0,
+        "queue_wait_ms": {
+          "max": 49.349,
+          "p50": 37.853,
+          "p95": 49.291399999999996
+        }
+      }
+    },
+    {
+      "configuration": {
+        "duplicate_requests": 20,
+        "inference_delay_seconds": 1,
+        "unrelated_requests": 4,
+        "workers": 4
+      },
+      "duplicates": {
+        "completed": 20,
+        "completion_ms": {
+          "max": 1588.827,
+          "p50": 1021.3425,
+          "p95": 1439.4708500000002
+        },
+        "count": 20,
+        "failed": 0,
+        "queue_wait_ms": {
+          "max": 1023.2470000000001,
+          "p50": 1017.5485,
+          "p95": 1023.2432
+        }
+      },
+      "jobs": [
+        {
+          "cache": "miss",
+          "completion_ms": 1021.415,
+          "job_id": "1267c322-24e5-4997-88a5-19a8ee0ebbb8",
+          "queue_wait_ms": 6.207,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1431.6100000000001,
+          "job_id": "df9d0b36-6cd0-4833-aa73-716ee5dc1850",
+          "queue_wait_ms": 32.227,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1364.283,
+          "job_id": "9d849984-78ff-4203-9983-6a7c97db7106",
+          "queue_wait_ms": 30.39,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1588.827,
+          "job_id": "2aaa9eea-596d-4a3e-972b-5c8ef24f4b31",
+          "queue_wait_ms": 113.91900000000001,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1014.4709999999999,
+          "job_id": "6c78f93e-5393-42f3-b2bc-8a4669fd04b8",
+          "queue_wait_ms": 1013.3890000000001,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1015.7570000000001,
+          "job_id": "201d844f-d745-47da-9a08-0eeec18ebb03",
+          "queue_wait_ms": 1014.715,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1016.9390000000001,
+          "job_id": "a62e020e-8f12-44b6-a0c4-79121427d410",
+          "queue_wait_ms": 1016.1929999999999,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1013.485,
+          "job_id": "151e0331-1d2d-4771-abfe-e1c2b91299ad",
+          "queue_wait_ms": 1012.2819999999999,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1018.2180000000001,
+          "job_id": "c9e633a7-0577-4f10-bcae-dd1c711041da",
+          "queue_wait_ms": 1017.428,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1018.4,
+          "job_id": "06769f93-dee1-4b0a-9f6a-b1630db9b21b",
+          "queue_wait_ms": 1017.669,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1018.0169999999999,
+          "job_id": "bb9e43ad-cc13-46bd-b918-a7087bf3e496",
+          "queue_wait_ms": 1017.35,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1019.077,
+          "job_id": "dcb630a9-308e-4591-b012-751bcebfbacc",
+          "queue_wait_ms": 1018.3729999999999,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1020.168,
+          "job_id": "82c91fa6-e223-4d09-a88e-444b3af98c8b",
+          "queue_wait_ms": 1019.496,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1021.2699999999999,
+          "job_id": "8a259769-55ed-4717-8ed9-e4a74fc328e3",
+          "queue_wait_ms": 1020.5949999999999,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1022.352,
+          "job_id": "1f40dd2a-966f-4c08-a268-60c6af69e531",
+          "queue_wait_ms": 1021.6769999999999,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1023.361,
+          "job_id": "6c55a7ed-546e-4106-95aa-95068c32dd53",
+          "queue_wait_ms": 1022.7440000000001,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1023.9130000000001,
+          "job_id": "0fc3f340-36d6-4521-b010-3d767e5b1cb3",
+          "queue_wait_ms": 1023.2470000000001,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1023.7210000000001,
+          "job_id": "48d0bd30-2845-4482-9981-41217a5f3491",
+          "queue_wait_ms": 1023.0749999999999,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1022.9870000000001,
+          "job_id": "86ab9efc-3352-418e-800c-387a6d931550",
+          "queue_wait_ms": 1022.3670000000001,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1023.8719999999998,
+          "job_id": "458b7467-d825-4909-a890-e0dce5fe9525",
+          "queue_wait_ms": 1023.2429999999999,
+          "status": "completed"
+        },
+        {
+          "cache": "miss",
+          "completion_ms": 2000.667,
+          "job_id": "a6105e59-95da-408e-a447-42b6d6b3f756",
+          "queue_wait_ms": 990.7230000000001,
+          "status": "completed"
+        },
+        {
+          "cache": "miss",
+          "completion_ms": 2334.151,
+          "job_id": "e62a7284-3ec1-4140-9492-8e3fca0c7cbd",
+          "queue_wait_ms": 1320.674,
+          "status": "completed"
+        },
+        {
+          "cache": "miss",
+          "completion_ms": 2394.411,
+          "job_id": "9c5f70af-d94e-41f7-a0f4-cd7879c8cedb",
+          "queue_wait_ms": 1382.4479999999999,
+          "status": "completed"
+        },
+        {
+          "cache": "miss",
+          "completion_ms": 2560.137,
+          "job_id": "3052054a-5093-4c5d-8f0c-7f053346a07f",
+          "queue_wait_ms": 1546.427,
+          "status": "completed"
+        }
+      ],
+      "metric_deltas": {
+        "dead_jobs": 0,
+        "failed_jobs": 0,
+        "flight_cache_recheck_hits": 3,
+        "flight_failed": 0,
+        "flight_fencing_rejections": 0,
+        "flight_follower_wait_ms_total": 4202,
+        "flight_followers_joined": 3,
+        "flight_leaders_acquired": 5,
+        "flight_publications": 5,
+        "flight_takeovers": 0,
+        "flight_timeouts": 0,
+        "linear_search_count": 24,
+        "processed_jobs": 24,
+        "provider_call_count": 5,
+        "semantic_cache_hits": 19,
+        "semantic_cache_misses": 8
+      },
+      "project": "mini-redis-hol-20261109-mixed-01",
+      "recorded_at": "2026-11-10T02:17:23.271547+00:00",
+      "resource_snapshot": [
+        {
+          "cpu_percent": "0.34%",
+          "memory_usage": "37.17MiB / 3.827GiB",
+          "name": "mini-redis-hol-20261109-mixed-01-api-1"
+        },
+        {
+          "cpu_percent": "2.79%",
+          "memory_usage": "10.57MiB / 3.827GiB",
+          "name": "mini-redis-hol-20261109-mixed-01-redis_clone-1"
+        },
+        {
+          "cpu_percent": "1.26%",
+          "memory_usage": "22.11MiB / 3.827GiB",
+          "name": "mini-redis-hol-20261109-mixed-01-worker-1"
+        },
+        {
+          "cpu_percent": "0.69%",
+          "memory_usage": "22.1MiB / 3.827GiB",
+          "name": "mini-redis-hol-20261109-mixed-01-worker-2"
+        },
+        {
+          "cpu_percent": "0.96%",
+          "memory_usage": "22.11MiB / 3.827GiB",
+          "name": "mini-redis-hol-20261109-mixed-01-worker-3"
+        },
+        {
+          "cpu_percent": "0.86%",
+          "memory_usage": "22.11MiB / 3.827GiB",
+          "name": "mini-redis-hol-20261109-mixed-01-worker-4"
+        }
+      ],
+      "run_number": 1,
+      "scenario": "mixed",
+      "unrelated": {
+        "completed": 4,
+        "completion_ms": {
+          "max": 2560.137,
+          "p50": 2364.281,
+          "p95": 2535.2781
+        },
+        "count": 4,
+        "failed": 0,
+        "queue_wait_ms": {
+          "max": 1546.427,
+          "p50": 1351.561,
+          "p95": 1521.8301499999998
+        }
+      }
+    },
+    {
+      "configuration": {
+        "duplicate_requests": 0,
+        "inference_delay_seconds": 1,
+        "unrelated_requests": 4,
+        "workers": 4
+      },
+      "duplicates": {
+        "completed": 0,
+        "completion_ms": {
+          "max": null,
+          "p50": null,
+          "p95": null
+        },
+        "count": 0,
+        "failed": 0,
+        "queue_wait_ms": {
+          "max": null,
+          "p50": null,
+          "p95": null
+        }
+      },
+      "jobs": [
+        {
+          "cache": "miss",
+          "completion_ms": 1095.27,
+          "job_id": "cf8347ae-fe03-4125-b778-4d1e850c16f9",
+          "queue_wait_ms": 40.741,
+          "status": "completed"
+        },
+        {
+          "cache": "miss",
+          "completion_ms": 1098.786,
+          "job_id": "3970b498-7e7f-4da2-9bd1-0afb6a05edd4",
+          "queue_wait_ms": 71.241,
+          "status": "completed"
+        },
+        {
+          "cache": "miss",
+          "completion_ms": 1136.11,
+          "job_id": "82d7ef8a-8073-4252-adbf-3eb0b1c1f624",
+          "queue_wait_ms": 129.37699999999998,
+          "status": "completed"
+        },
+        {
+          "cache": "miss",
+          "completion_ms": 1100.426,
+          "job_id": "603dfd56-e077-49f4-bb45-6ca516b37dca",
+          "queue_wait_ms": 72.43900000000001,
+          "status": "completed"
+        }
+      ],
+      "metric_deltas": {
+        "dead_jobs": 0,
+        "failed_jobs": 0,
+        "flight_cache_recheck_hits": 0,
+        "flight_failed": 0,
+        "flight_fencing_rejections": 0,
+        "flight_follower_wait_ms_total": 0,
+        "flight_followers_joined": 0,
+        "flight_leaders_acquired": 4,
+        "flight_publications": 4,
+        "flight_takeovers": 0,
+        "flight_timeouts": 0,
+        "linear_search_count": 4,
+        "processed_jobs": 4,
+        "provider_call_count": 4,
+        "semantic_cache_hits": 0,
+        "semantic_cache_misses": 4
+      },
+      "project": "mini-redis-hol-20261109-control-02",
+      "recorded_at": "2026-11-10T02:17:31.262020+00:00",
+      "resource_snapshot": [
+        {
+          "cpu_percent": "0.22%",
+          "memory_usage": "36.07MiB / 3.827GiB",
+          "name": "mini-redis-hol-20261109-control-02-api-1"
+        },
+        {
+          "cpu_percent": "2.24%",
+          "memory_usage": "10.53MiB / 3.827GiB",
+          "name": "mini-redis-hol-20261109-control-02-redis_clone-1"
+        },
+        {
+          "cpu_percent": "0.80%",
+          "memory_usage": "22.1MiB / 3.827GiB",
+          "name": "mini-redis-hol-20261109-control-02-worker-1"
+        },
+        {
+          "cpu_percent": "0.83%",
+          "memory_usage": "22.1MiB / 3.827GiB",
+          "name": "mini-redis-hol-20261109-control-02-worker-2"
+        },
+        {
+          "cpu_percent": "0.64%",
+          "memory_usage": "22.11MiB / 3.827GiB",
+          "name": "mini-redis-hol-20261109-control-02-worker-3"
+        },
+        {
+          "cpu_percent": "0.69%",
+          "memory_usage": "22.1MiB / 3.827GiB",
+          "name": "mini-redis-hol-20261109-control-02-worker-4"
+        }
+      ],
+      "run_number": 2,
+      "scenario": "control",
+      "unrelated": {
+        "completed": 4,
+        "completion_ms": {
+          "max": 1136.11,
+          "p50": 1099.606,
+          "p95": 1130.7574
+        },
+        "count": 4,
+        "failed": 0,
+        "queue_wait_ms": {
+          "max": 129.37699999999998,
+          "p50": 71.84,
+          "p95": 120.83629999999997
+        }
+      }
+    },
+    {
+      "configuration": {
+        "duplicate_requests": 20,
+        "inference_delay_seconds": 1,
+        "unrelated_requests": 4,
+        "workers": 4
+      },
+      "duplicates": {
+        "completed": 20,
+        "completion_ms": {
+          "max": 1552.163,
+          "p50": 1026.438,
+          "p95": 1517.26285
+        },
+        "count": 20,
+        "failed": 0,
+        "queue_wait_ms": {
+          "max": 1028.924,
+          "p50": 1023.213,
+          "p95": 1028.6979
+        }
+      },
+      "jobs": [
+        {
+          "cache": "hit",
+          "completion_ms": 1552.163,
+          "job_id": "16884824-7d8c-49d6-8e8e-174a19a94e1e",
+          "queue_wait_ms": 44.001,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1515.426,
+          "job_id": "7a97b6fe-9dc5-4f09-b623-559b77eb1646",
+          "queue_wait_ms": 25.45,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1021.8190000000001,
+          "job_id": "76e1b5cc-09dd-42cd-9737-63be6ca221e1",
+          "queue_wait_ms": 1020.9490000000001,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1390.905,
+          "job_id": "63b678e2-5d76-43de-874f-754fd3dd4b1a",
+          "queue_wait_ms": 10.579,
+          "status": "completed"
+        },
+        {
+          "cache": "miss",
+          "completion_ms": 1018.842,
+          "job_id": "4176ac74-afd0-4127-b106-0c1da28978cc",
+          "queue_wait_ms": 7.675000000000001,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1023.6540000000001,
+          "job_id": "3b1ec84e-76e1-4397-9796-9d449d17cbfb",
+          "queue_wait_ms": 1022.9440000000001,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1026.4750000000001,
+          "job_id": "f613173a-bf9c-4fa5-8641-4320959e0d32",
+          "queue_wait_ms": 1025.8259999999998,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1026.4009999999998,
+          "job_id": "cb63bd82-8392-4956-beb7-a598c9361c72",
+          "queue_wait_ms": 1025.72,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1019.0740000000001,
+          "job_id": "a0b5ac46-cf64-460e-b9e9-17c67773c099",
+          "queue_wait_ms": 1017.9540000000001,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1024.307,
+          "job_id": "ce54df30-1f92-42f2-a17d-25b567dd6589",
+          "queue_wait_ms": 1023.482,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1020.677,
+          "job_id": "959c311b-fddb-4fb0-a8a9-00ddcf634b1d",
+          "queue_wait_ms": 1019.6210000000001,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1023.403,
+          "job_id": "478b3691-6085-43d4-8b1f-63c30d2b473a",
+          "queue_wait_ms": 1022.5139999999999,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1022.6329999999999,
+          "job_id": "536ee611-471b-4ffa-ba60-7847b8e3d47a",
+          "queue_wait_ms": 1021.733,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1025.334,
+          "job_id": "1c71cf05-2147-4099-af77-56f0200cf779",
+          "queue_wait_ms": 1024.593,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1029.5829999999999,
+          "job_id": "3e038008-3ad5-47dc-a5d4-5bf87a6fba35",
+          "queue_wait_ms": 1028.924,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1027.915,
+          "job_id": "7a9fae67-743e-4eb7-af45-567441b32100",
+          "queue_wait_ms": 1027.283,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1028.189,
+          "job_id": "9acf9e83-91f8-44f3-b55e-ba47b354d668",
+          "queue_wait_ms": 1027.53,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1029.134,
+          "job_id": "1bbd093c-4741-471e-821b-2e2c968707d0",
+          "queue_wait_ms": 1028.495,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1029.397,
+          "job_id": "8645fabb-a643-45cb-969c-23ff98ebae8b",
+          "queue_wait_ms": 1028.686,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1028.6200000000001,
+          "job_id": "abd5f7dc-ad55-420a-8d5c-71818f0e81c3",
+          "queue_wait_ms": 1027.984,
+          "status": "completed"
+        },
+        {
+          "cache": "miss",
+          "completion_ms": 2012.4209999999998,
+          "job_id": "375b12de-22b1-4bf2-8675-3851c7d16261",
+          "queue_wait_ms": 1007.371,
+          "status": "completed"
+        },
+        {
+          "cache": "miss",
+          "completion_ms": 2365.944,
+          "job_id": "d216508f-f9f9-4d14-b229-c17481dc3933",
+          "queue_wait_ms": 1356.512,
+          "status": "completed"
+        },
+        {
+          "cache": "miss",
+          "completion_ms": 2495.9289999999996,
+          "job_id": "4ba23ab0-5689-4038-b489-19be8f76716b",
+          "queue_wait_ms": 1484.5520000000001,
+          "status": "completed"
+        },
+        {
+          "cache": "miss",
+          "completion_ms": 2530.497,
+          "job_id": "ee935e68-071c-4321-bb7c-8e82cf6e3a88",
+          "queue_wait_ms": 1521.9640000000002,
+          "status": "completed"
+        }
+      ],
+      "metric_deltas": {
+        "dead_jobs": 0,
+        "failed_jobs": 0,
+        "flight_cache_recheck_hits": 3,
+        "flight_failed": 0,
+        "flight_fencing_rejections": 0,
+        "flight_follower_wait_ms_total": 4366,
+        "flight_followers_joined": 3,
+        "flight_leaders_acquired": 5,
+        "flight_publications": 5,
+        "flight_takeovers": 0,
+        "flight_timeouts": 0,
+        "linear_search_count": 24,
+        "processed_jobs": 24,
+        "provider_call_count": 5,
+        "semantic_cache_hits": 19,
+        "semantic_cache_misses": 8
+      },
+      "project": "mini-redis-hol-20261109-mixed-02",
+      "recorded_at": "2026-11-10T02:17:40.959051+00:00",
+      "resource_snapshot": [
+        {
+          "cpu_percent": "0.30%",
+          "memory_usage": "37.66MiB / 3.827GiB",
+          "name": "mini-redis-hol-20261109-mixed-02-api-1"
+        },
+        {
+          "cpu_percent": "2.44%",
+          "memory_usage": "10.81MiB / 3.827GiB",
+          "name": "mini-redis-hol-20261109-mixed-02-redis_clone-1"
+        },
+        {
+          "cpu_percent": "0.73%",
+          "memory_usage": "22.1MiB / 3.827GiB",
+          "name": "mini-redis-hol-20261109-mixed-02-worker-1"
+        },
+        {
+          "cpu_percent": "0.76%",
+          "memory_usage": "22.11MiB / 3.827GiB",
+          "name": "mini-redis-hol-20261109-mixed-02-worker-2"
+        },
+        {
+          "cpu_percent": "1.07%",
+          "memory_usage": "22.11MiB / 3.827GiB",
+          "name": "mini-redis-hol-20261109-mixed-02-worker-3"
+        },
+        {
+          "cpu_percent": "0.83%",
+          "memory_usage": "22.11MiB / 3.827GiB",
+          "name": "mini-redis-hol-20261109-mixed-02-worker-4"
+        }
+      ],
+      "run_number": 2,
+      "scenario": "mixed",
+      "unrelated": {
+        "completed": 4,
+        "completion_ms": {
+          "max": 2530.497,
+          "p50": 2430.9365,
+          "p95": 2525.3118
+        },
+        "count": 4,
+        "failed": 0,
+        "queue_wait_ms": {
+          "max": 1521.9640000000002,
+          "p50": 1420.5320000000002,
+          "p95": 1516.3522
+        }
+      }
+    },
+    {
+      "configuration": {
+        "duplicate_requests": 0,
+        "inference_delay_seconds": 1,
+        "unrelated_requests": 4,
+        "workers": 4
+      },
+      "duplicates": {
+        "completed": 0,
+        "completion_ms": {
+          "max": null,
+          "p50": null,
+          "p95": null
+        },
+        "count": 0,
+        "failed": 0,
+        "queue_wait_ms": {
+          "max": null,
+          "p50": null,
+          "p95": null
+        }
+      },
+      "jobs": [
+        {
+          "cache": "miss",
+          "completion_ms": 1044.924,
+          "job_id": "34f6623f-eed3-4ef3-9912-91720053ef42",
+          "queue_wait_ms": 24.857,
+          "status": "completed"
+        },
+        {
+          "cache": "miss",
+          "completion_ms": 1041.806,
+          "job_id": "5b5e063b-164d-43ce-b19b-ebc9f28deb5a",
+          "queue_wait_ms": 21.498,
+          "status": "completed"
+        },
+        {
+          "cache": "miss",
+          "completion_ms": 1043.574,
+          "job_id": "732e42e4-de26-4e32-8b09-ec3401258592",
+          "queue_wait_ms": 24.852,
+          "status": "completed"
+        },
+        {
+          "cache": "miss",
+          "completion_ms": 1072.1080000000002,
+          "job_id": "6bc77c03-2cd2-4101-89bf-9403656e6abe",
+          "queue_wait_ms": 64.051,
+          "status": "completed"
+        }
+      ],
+      "metric_deltas": {
+        "dead_jobs": 0,
+        "failed_jobs": 0,
+        "flight_cache_recheck_hits": 0,
+        "flight_failed": 0,
+        "flight_fencing_rejections": 0,
+        "flight_follower_wait_ms_total": 0,
+        "flight_followers_joined": 0,
+        "flight_leaders_acquired": 4,
+        "flight_publications": 4,
+        "flight_takeovers": 0,
+        "flight_timeouts": 0,
+        "linear_search_count": 4,
+        "processed_jobs": 4,
+        "provider_call_count": 4,
+        "semantic_cache_hits": 0,
+        "semantic_cache_misses": 4
+      },
+      "project": "mini-redis-hol-20261109-control-03",
+      "recorded_at": "2026-11-10T02:17:49.091180+00:00",
+      "resource_snapshot": [
+        {
+          "cpu_percent": "0.34%",
+          "memory_usage": "36.05MiB / 3.827GiB",
+          "name": "mini-redis-hol-20261109-control-03-api-1"
+        },
+        {
+          "cpu_percent": "2.79%",
+          "memory_usage": "10.53MiB / 3.827GiB",
+          "name": "mini-redis-hol-20261109-control-03-redis_clone-1"
+        },
+        {
+          "cpu_percent": "1.04%",
+          "memory_usage": "22.11MiB / 3.827GiB",
+          "name": "mini-redis-hol-20261109-control-03-worker-1"
+        },
+        {
+          "cpu_percent": "0.75%",
+          "memory_usage": "22.12MiB / 3.827GiB",
+          "name": "mini-redis-hol-20261109-control-03-worker-2"
+        },
+        {
+          "cpu_percent": "0.88%",
+          "memory_usage": "22.11MiB / 3.827GiB",
+          "name": "mini-redis-hol-20261109-control-03-worker-3"
+        },
+        {
+          "cpu_percent": "0.83%",
+          "memory_usage": "22.09MiB / 3.827GiB",
+          "name": "mini-redis-hol-20261109-control-03-worker-4"
+        }
+      ],
+      "run_number": 3,
+      "scenario": "control",
+      "unrelated": {
+        "completed": 4,
+        "completion_ms": {
+          "max": 1072.1080000000002,
+          "p50": 1044.249,
+          "p95": 1068.0304
+        },
+        "count": 4,
+        "failed": 0,
+        "queue_wait_ms": {
+          "max": 64.051,
+          "p50": 24.8545,
+          "p95": 58.17189999999999
+        }
+      }
+    },
+    {
+      "configuration": {
+        "duplicate_requests": 20,
+        "inference_delay_seconds": 1,
+        "unrelated_requests": 4,
+        "workers": 4
+      },
+      "duplicates": {
+        "completed": 20,
+        "completion_ms": {
+          "max": 1518.022,
+          "p50": 1016.7730000000001,
+          "p95": 1438.4652
+        },
+        "count": 20,
+        "failed": 0,
+        "queue_wait_ms": {
+          "max": 1017.9,
+          "p50": 1015.317,
+          "p95": 1017.53615
+        }
+      },
+      "jobs": [
+        {
+          "cache": "miss",
+          "completion_ms": 1030.5169999999998,
+          "job_id": "64d773a8-019f-407d-9e18-2a4505d8199e",
+          "queue_wait_ms": 10.915,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1357.599,
+          "job_id": "c1a4b55d-9e48-478e-8379-8f50c0afeed0",
+          "queue_wait_ms": 16.424,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1518.022,
+          "job_id": "aff78bfc-fdb6-4558-892e-eec16da91ebe",
+          "queue_wait_ms": 84.53,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1434.278,
+          "job_id": "fec2f0a4-4aad-40b1-a406-d71e0937459d",
+          "queue_wait_ms": 20.608999999999998,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1016.7870000000001,
+          "job_id": "2df362ba-f9ad-4847-b7a3-e42a246c2716",
+          "queue_wait_ms": 1016.1389999999999,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1017.6540000000001,
+          "job_id": "24b34402-66fb-412f-ae4f-a7d92e5aabb2",
+          "queue_wait_ms": 1017.0559999999999,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1016.322,
+          "job_id": "95067422-c015-4085-8839-de2880736cd4",
+          "queue_wait_ms": 1015.4909999999999,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1018.671,
+          "job_id": "5beab2ad-14d6-432c-b64f-a3dc15a75c37",
+          "queue_wait_ms": 1017.9,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1017.638,
+          "job_id": "9a65ad16-8daa-4399-a61b-dfe1631a03c5",
+          "queue_wait_ms": 1016.9570000000001,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1016.5979999999998,
+          "job_id": "673cce51-522b-485c-8482-719cc646eda6",
+          "queue_wait_ms": 1015.9309999999999,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1015.7830000000001,
+          "job_id": "227fbfb6-3b98-4908-9e48-7d651c7a64f0",
+          "queue_wait_ms": 1015.109,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1015.4730000000001,
+          "job_id": "4fbb3e57-abc4-46db-969e-1359d318b7e8",
+          "queue_wait_ms": 1014.82,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1015.877,
+          "job_id": "931a30ae-b805-4940-8ba6-d10f977d5fe4",
+          "queue_wait_ms": 1015.239,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1016.759,
+          "job_id": "9ffca005-b68b-40f0-959c-97a05a0c3a56",
+          "queue_wait_ms": 1016.1260000000001,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1017.2030000000001,
+          "job_id": "21d4932f-6fd5-40e1-89d9-4dd82f24d1fb",
+          "queue_wait_ms": 1016.5310000000001,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1018.203,
+          "job_id": "b330adf0-5642-4551-99a3-1589c2f76276",
+          "queue_wait_ms": 1017.517,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1016.2979999999999,
+          "job_id": "d98ed40d-cdb6-4665-960f-8baa787b61eb",
+          "queue_wait_ms": 1015.3950000000001,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1011.676,
+          "job_id": "a37501cf-3bf7-4b63-bb76-1aa4bd517470",
+          "queue_wait_ms": 1010.82,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1011.8629999999999,
+          "job_id": "56c3773b-1f66-44a2-9636-9b63e0ecf875",
+          "queue_wait_ms": 1010.9809999999999,
+          "status": "completed"
+        },
+        {
+          "cache": "hit",
+          "completion_ms": 1013.0939999999999,
+          "job_id": "d7d0810a-681a-4732-a696-f52eca160b11",
+          "queue_wait_ms": 1012.2930000000001,
+          "status": "completed"
+        },
+        {
+          "cache": "miss",
+          "completion_ms": 1988.289,
+          "job_id": "579e14a5-4e8d-46d4-9ddb-ea99d3651010",
+          "queue_wait_ms": 979.976,
+          "status": "completed"
+        },
+        {
+          "cache": "miss",
+          "completion_ms": 2321.154,
+          "job_id": "b2a30d61-dd0f-4740-96cc-377a0f329e8f",
+          "queue_wait_ms": 1303.997,
+          "status": "completed"
+        },
+        {
+          "cache": "miss",
+          "completion_ms": 2394.2760000000003,
+          "job_id": "c51a4f81-afe0-43a3-bfef-20d6a77a5151",
+          "queue_wait_ms": 1380.988,
+          "status": "completed"
+        },
+        {
+          "cache": "miss",
+          "completion_ms": 2471.5099999999998,
+          "job_id": "11a5888a-bff4-42da-b429-5d64eb30e109",
+          "queue_wait_ms": 1463.171,
+          "status": "completed"
+        }
+      ],
+      "metric_deltas": {
+        "dead_jobs": 0,
+        "failed_jobs": 0,
+        "flight_cache_recheck_hits": 3,
+        "flight_failed": 0,
+        "flight_fencing_rejections": 0,
+        "flight_follower_wait_ms_total": 4178,
+        "flight_followers_joined": 3,
+        "flight_leaders_acquired": 5,
+        "flight_publications": 5,
+        "flight_takeovers": 0,
+        "flight_timeouts": 0,
+        "linear_search_count": 24,
+        "processed_jobs": 24,
+        "provider_call_count": 5,
+        "semantic_cache_hits": 19,
+        "semantic_cache_misses": 8
+      },
+      "project": "mini-redis-hol-20261109-mixed-03",
+      "recorded_at": "2026-11-10T02:17:58.648598+00:00",
+      "resource_snapshot": [
+        {
+          "cpu_percent": "0.31%",
+          "memory_usage": "37.55MiB / 3.827GiB",
+          "name": "mini-redis-hol-20261109-mixed-03-api-1"
+        },
+        {
+          "cpu_percent": "2.20%",
+          "memory_usage": "10.58MiB / 3.827GiB",
+          "name": "mini-redis-hol-20261109-mixed-03-redis_clone-1"
+        },
+        {
+          "cpu_percent": "0.76%",
+          "memory_usage": "22.11MiB / 3.827GiB",
+          "name": "mini-redis-hol-20261109-mixed-03-worker-1"
+        },
+        {
+          "cpu_percent": "0.71%",
+          "memory_usage": "22.09MiB / 3.827GiB",
+          "name": "mini-redis-hol-20261109-mixed-03-worker-2"
+        },
+        {
+          "cpu_percent": "0.70%",
+          "memory_usage": "22.12MiB / 3.827GiB",
+          "name": "mini-redis-hol-20261109-mixed-03-worker-3"
+        },
+        {
+          "cpu_percent": "0.97%",
+          "memory_usage": "22.11MiB / 3.827GiB",
+          "name": "mini-redis-hol-20261109-mixed-03-worker-4"
+        }
+      ],
+      "run_number": 3,
+      "scenario": "mixed",
+      "unrelated": {
+        "completed": 4,
+        "completion_ms": {
+          "max": 2471.5099999999998,
+          "p50": 2357.715,
+          "p95": 2459.9249
+        },
+        "count": 4,
+        "failed": 0,
+        "queue_wait_ms": {
+          "max": 1463.171,
+          "p50": 1342.4925,
+          "p95": 1450.84355
+        }
+      }
+    }
+  ],
+  "runs_per_scenario": 3,
+  "schema_version": 1
+}
