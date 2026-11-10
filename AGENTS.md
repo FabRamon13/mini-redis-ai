@@ -20,6 +20,7 @@ Treat actual source code and tests as authoritative about CURRENT behavior. Trea
 
 ## Engineering rules
 - Work on a dedicated Git feature branch. Do not push, merge, deploy, delete persistent volumes, or modify production/cloud infrastructure without explicit approval.
+- Before any merge, rebase, commit, or push, report the exact planned Git action and obtain explicit approval. Never force-push, hard-reset, or discard commits during routine development.
 - Before coding, inspect the relevant code path, tests, and integration boundaries; state the design and anticipated edge cases briefly.
 - Make narrow, incremental changes rather than large refactors. Retain existing interfaces and persistence formats unless migration is planned.
 - Add deterministic unit/integration/concurrency/failure tests for every behavior change. Run the relevant tests and report exact commands and outcomes.

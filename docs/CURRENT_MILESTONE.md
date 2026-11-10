@@ -1,6 +1,6 @@
 # Current Milestone — Week 1: Baseline and Cache Stampede Prevention
 
-Status: Not yet implemented/verified in v2. This is a planning checkpoint, not a declaration that tests have passed.
+Status: Repository audit and baseline reconciliation complete. The four-worker stampede baseline and request coalescing are not yet implemented or verified.
 Historical target: October 13–19, 2026; current work is continuing beyond that original window. Do not treat historic dates as completion evidence.
 
 ## Objective
@@ -31,5 +31,5 @@ Demonstrate a reproducible concurrency race with multiple worker processes, then
 - Crashes, timeouts, retries and cleanup have explicit tests and documented limitations.
 - Metrics, documentation, diagrams and README updated only when verified.
 
-## Agent behavior on first session
-First audit and report a short implementation plan. Do not code the entire v2 roadmap. Deliver the smallest testable PR focused on baseline instrumentation and benchmark setup.
+## Next development session
+Run the controlled four-worker cache-stampede baseline before designing or implementing request coalescing. Deliver the smallest testable PR focused on baseline instrumentation, benchmark setup, and machine-readable evidence. Do not advance into later v2 milestones.
