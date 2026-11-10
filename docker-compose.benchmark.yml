@@ -1,0 +1,50 @@
+x-benchmark-worker: &benchmark-worker
+  build:
+    context: .
+    dockerfile: Dockerfile.worker
+  depends_on:
+    - redis_clone
+  environment:
+    REDIS_HOST: redis_clone
+    REDIS_PORT: 31337
+    DEMO_INFERENCE_DELAY_SECONDS: "1"
+    SEMANTIC_CACHE_THRESHOLD: "0.75"
+    SEMANTIC_CACHE_MAX_ENTRIES: "1000"
+    WORKER_LEASE_SECONDS: "60"
+    WORKER_RECOVERY_INTERVAL_SECONDS: "30"
+    WORKER_HEARTBEAT_INTERVAL_SECONDS: "15"
+    VECTOR_SEARCH_ENGINE: "linear"
+  command: ["python", "-m", "worker.worker"]
+
+services:
+  redis_clone:
+    build:
+      context: .
+      dockerfile: Dockerfile.redis
+    environment:
+      REDIS_BIND_HOST: 0.0.0.0
+      REDIS_PORT: 31337
+      AOF_FILE: /app/data/appendonly.aof
+    volumes:
+      - benchmark_redis_data:/app/data
+    command: ["python", "-m", "redis_clone.server"]
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    depends_on:
+      - redis_clone
+    environment:
+      REDIS_HOST: redis_clone
+      REDIS_PORT: 31337
+      MAX_QUEUE_SIZE: "200"
+    ports:
+      - "${BENCHMARK_API_PORT:-18000}:8000"
+    command: ["uvicorn", "fastapi_cache.main:app", "--host", "0.0.0.0", "--port", "8000", "--no-access-log"]
+
+  worker:
+    <<: *benchmark-worker
+
+volumes:
+  benchmark_redis_data:

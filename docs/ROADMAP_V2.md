@@ -9,7 +9,7 @@ A cache/AI inference infrastructure platform with tested concurrency controls, s
 
 ### Week 1 (Oct 13–19): Baseline and concurrency — Core
 - [x] Audit inference request path and metrics.
-- [ ] Run repeatable cold-cache multi-worker stampede baseline.
+- [x] Run repeatable cold-cache multi-worker stampede baseline.
 - [ ] Implement cross-worker single-flight with atomic coordination, well-scoped keys, leader/follower behavior, error/timeout cleanup and failure tests.
 - [ ] Demonstrate provider-call reduction for 100 identical concurrent misses.
 
