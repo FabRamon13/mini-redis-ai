@@ -1,6 +1,6 @@
 # Current Milestone — Week 1: Baseline and Cache Stampede Prevention
 
-Status: Repository audit, baseline reconciliation, and the four-worker stampede baseline are complete. Request coalescing is not yet implemented or verified.
+Status: Repository audit, baseline reconciliation, stampede baseline, and Step 2 distributed request coalescing are implemented and locally verified. Step 2 remains uncommitted and pending engineering review.
 Historical target: October 13–19, 2026; current work is continuing beyond that original window. Do not treat historic dates as completion evidence.
 
 ## Objective
@@ -20,8 +20,12 @@ Demonstrate a reproducible concurrency race with multiple worker processes, then
 - 100 completed jobs, 0 failed jobs, 4 provider calls, 4 semantic misses and 96 semantic hits.
 - Raw machine-readable results stored under `benchmarks/results/`.
 
-## Next task after review
-Propose a distributed coalescing design: the exact key must include appropriate provider/model/version/tenant/options; atomic leadership, expiry, follower behavior, result handoff, error propagation, safe cleanup, stale-owner fencing and crash/retry semantics. Do not implement it until the baseline changes and evidence have been reviewed.
+## Verified coalescing evidence
+- Redis Clone owns flight time, leases and monotonically increasing fencing generations.
+- `FLIGHTCOMMIT` atomically publishes the semantic record, updates and prunes the cache index, and resolves the current fenced flight as completed.
+- Workers recheck after leadership, renew during provider work, and use bounded jittered follower polling with expiry takeover and failure cooldown.
+- An isolated four-worker run completed 100/100 jobs with 1 provider execution, 1 accepted publication, 4 initial semantic misses, 99 returned cache hits, no takeover, timeout, failure or fencing rejection, and a terminal `COMPLETED` flight.
+- Raw post-change evidence is stored at `benchmarks/results/stampede-singleflight-20261109.json`; the accepted baseline artifacts are unchanged.
 
 ## Acceptance
 - At least 100 identical inference requests exercised concurrently with multiple workers.
@@ -32,4 +36,4 @@ Propose a distributed coalescing design: the exact key must include appropriate 
 - Metrics, documentation, diagrams and README updated only when verified.
 
 ## Next development session
-Review the baseline evidence, then design request coalescing as a separate incremental change. Do not advance into later v2 milestones.
+Review the Step 2 atomic publication, worker integration, failure tests, metrics and four-worker evidence. Do not advance into later v2 milestones until this implementation is accepted.

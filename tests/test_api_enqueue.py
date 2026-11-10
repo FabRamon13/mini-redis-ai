@@ -42,6 +42,15 @@ class MetricsCache:
             "metrics:linear_search_latency_us_total": b"875",
             "metrics:provider_call_count": b"4",
             "metrics:provider_latency_ms_total": b"44",
+            "metrics:flight_leaders_acquired": b"2",
+            "metrics:flight_followers_joined": b"6",
+            "metrics:flight_publications": b"2",
+            "metrics:flight_takeovers": b"1",
+            "metrics:flight_failed": b"1",
+            "metrics:flight_fencing_rejections": b"1",
+            "metrics:flight_follower_wait_ms_total": b"320",
+            "metrics:flight_timeouts": b"1",
+            "metrics:flight_cache_recheck_hits": b"6",
         }
         self.lists = {
             "jobs": 4,
@@ -144,6 +153,10 @@ class ApiEnqueueTests(unittest.TestCase):
         self.assertEqual(metrics["provider_call_count"], 4)
         self.assertEqual(metrics["provider_latency_ms_total"], 44)
         self.assertEqual(metrics["provider_latency_ms_avg"], 11.0)
+        self.assertEqual(metrics["flight_leaders_acquired"], 2)
+        self.assertEqual(metrics["flight_followers_joined"], 6)
+        self.assertEqual(metrics["flight_publications"], 2)
+        self.assertEqual(metrics["flight_follower_wait_ms_total"], 320)
 
     def test_prometheus_metrics_returns_plaintext_metrics(self):
         request = SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace(cache=MetricsCache())))
@@ -155,6 +168,7 @@ class ApiEnqueueTests(unittest.TestCase):
         self.assertIn("mini_redis_semantic_cache_hits 2", response)
         self.assertIn("mini_redis_faiss_search_latency_ms_avg 5.125", response)
         self.assertIn("mini_redis_provider_latency_ms_avg 11.0", response)
+        self.assertIn("mini_redis_flight_publications 2", response)
         self.assertTrue(response.endswith("\n"))
 
     def test_job_metrics_treat_corrupt_counters_as_zero(self):

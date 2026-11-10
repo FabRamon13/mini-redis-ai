@@ -13,11 +13,13 @@ class FlightState:
     retry_at_ms: int = 0
     resolved_at_ms: int = 0
     error_code: str = ""
+    result_key: str = ""
 
 
 @dataclass(frozen=True)
 class FlightAcquireResult(FlightState):
     role: str = "FOLLOWER"
+    takeover: bool = False
 
 
 def _decode_flight_map(response):
@@ -161,6 +163,8 @@ class Client:
             retry_at_ms=int(result.get("retry_at_ms", 0)),
             resolved_at_ms=int(result.get("resolved_at_ms", 0)),
             error_code=result.get("error_code", ""),
+            result_key=result.get("result_key", ""),
+            takeover=bool(int(result.get("takeover", 0))),
         )
 
     def flight_renew(self, key, owner_id, generation, lease_ms):
@@ -187,6 +191,7 @@ class Client:
             retry_at_ms=int(result.get("retry_at_ms", 0)),
             resolved_at_ms=int(result.get("resolved_at_ms", 0)),
             error_code=result.get("error_code", ""),
+            result_key=result.get("result_key", ""),
         )
 
     def flight_release(self, key, owner_id, generation):
@@ -200,4 +205,25 @@ class Client:
             str(generation),
             str(cooldown_ms),
             error_code,
+        )
+
+    def flight_commit(
+        self,
+        flight_key,
+        owner_id,
+        generation,
+        cache_key,
+        cache_payload,
+        index_key,
+        max_entries,
+    ):
+        return self.execute(
+            "FLIGHTCOMMIT",
+            flight_key,
+            owner_id,
+            str(generation),
+            cache_key,
+            cache_payload,
+            index_key,
+            str(max_entries),
         )

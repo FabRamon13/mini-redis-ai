@@ -305,6 +305,21 @@ def get_job_metrics(request: Request):
     linear_search_count = decode_counter(linear_search_count)
     provider_call_count = cache.get("metrics:provider_call_count")
     provider_call_count = decode_counter(provider_call_count)
+    flight_metric_names = (
+        "flight_leaders_acquired",
+        "flight_followers_joined",
+        "flight_publications",
+        "flight_takeovers",
+        "flight_failed",
+        "flight_fencing_rejections",
+        "flight_follower_wait_ms_total",
+        "flight_timeouts",
+        "flight_cache_recheck_hits",
+    )
+    flight_metrics = {
+        name: decode_counter(cache.get(f"metrics:{name}"))
+        for name in flight_metric_names
+    }
 
     faiss_search_latency_ms_legacy = cache.get("metrics:faiss_search_latency_ms_total")
     linear_search_latency_ms_legacy = cache.get("metrics:linear_search_latency_ms_total")
@@ -350,7 +365,7 @@ def get_job_metrics(request: Request):
         else 0
     )
 
-    return {
+    metrics = {
         "queued_jobs": cache.llen("jobs"),
         "processing_jobs": cache.llen("processing_jobs"),
         "dead_jobs": cache.llen("dead_jobs"),
@@ -370,6 +385,8 @@ def get_job_metrics(request: Request):
         "provider_latency_ms_total": provider_latency_ms_total,
         "provider_latency_ms_avg": round(provider_latency_ms_avg, 2),
     }
+    metrics.update(flight_metrics)
+    return metrics
 
 @app.get("/metrics", response_class=PlainTextResponse)
 def prometheus_metrics(request: Request):

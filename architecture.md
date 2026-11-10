@@ -69,6 +69,8 @@ The architecture relies on these invariants:
 8. Semantic cache entries never cross provider, model ID, model revision, or
    embedding-dimension boundaries.
 9. API and Redis Clone processes do not import worker-only ML dependencies.
+10. Exact concurrent misses coordinate through datastore-owned flight leases;
+    only the current owner and fencing generation may publish a cache record.
 
 ---
 
@@ -303,6 +305,8 @@ changes and AOF append while holding that lock.
 | `FINISH` | Validate the token, persist terminal metadata, remove the claim, and optionally push to `dead_jobs` |
 | `ACK` | Validate the token and remove processing/claim state |
 | `INCR` / `INCRBY` | Read, modify, persist, and return a counter |
+| `FLIGHTACQUIRE` / `FLIGHTRENEW` | Elect or renew one owner using datastore time and a monotonic fencing generation |
+| `FLIGHTCOMMIT` | Validate ownership and atomically publish the cache record, update/prune the index, and resolve the flight |
 
 The Redis client also serializes each socket request/response cycle with a
 reentrant lock so concurrent API threads cannot interleave RESP frames on one
@@ -311,6 +315,25 @@ connection.
 These guarantees prevent partially applied in-memory queue transitions and
 lost counter updates. They do not provide distributed transactions,
 exactly-once execution, or atomicity across multiple client commands.
+
+### Distributed single-flight
+
+Workers derive an exact-request SHA-256 key from the prompt, provider, model
+identity, model revision, generation configuration and reserved tenant and
+knowledge namespaces. The prompt itself is not present in the datastore key.
+
+On an initial semantic miss, one worker becomes leader through
+`FLIGHTACQUIRE`; other workers remain followers while preserving their queue
+claim heartbeat. The leader rechecks Redis after acquisition, renews its
+datastore-owned lease during provider execution, and publishes through
+`FLIGHTCOMMIT`. Followers poll with bounded jitter, recheck the authoritative
+cache after completion, and can take over an expired or retryable failed term.
+
+Every leadership term receives a monotonically increasing generation. A stale
+or expired leader cannot renew, release, fail, or publish. Provider execution
+is not exactly once under arbitrary crashes: a provider call may continue after
+its lease is lost while a newer leader starts another call, but fencing permits
+only the current generation to publish.
 
 ---
 
@@ -500,17 +523,20 @@ metrics counters.
 
 ### Write Path
 
-Each mutating handler:
+Most legacy mutating handlers:
 
 1. Validates arguments before changing shared state.
 2. Acquires the server's reentrant lock.
 3. Applies the in-memory transition.
 4. Appends the corresponding command to the AOF before releasing the lock.
 
-The implementation opens the AOF in append mode for each command but does not
-call `fsync`. It reconstructs commands successfully written before restart,
-but does not claim power-loss durability for data still buffered by the
-operating system or storage device.
+Flight state and `FLIGHTCOMMIT` use a stricter write-ahead path: the resolved
+state transition is appended, flushed and `fsync` is requested before the
+in-memory mutation. A cache publication is stored as one replayable compound
+record covering the semantic record, index retention changes and terminal
+flight state. This narrows partial-publication risk but is not a general storage
+transaction. Legacy mutations retain their existing mutation-before-append,
+non-fsync behavior.
 
 ### Replay
 
@@ -518,9 +544,9 @@ At startup, the server reads RESP commands sequentially and dispatches them
 through normal command handlers. Replay mode suppresses AOF writes so
 restoration does not duplicate records.
 
-If replay reaches a malformed or crash-truncated frame, it stops before
-applying that command. Valid commands before the damaged frame remain restored;
-commands after the first damaged frame are not replayed.
+If replay reaches a malformed or crash-truncated final frame, it stops before
+applying that command and truncates the incomplete tail so later appends remain
+replayable. Valid commands before the damaged frame remain restored.
 
 ### TTL Semantics
 
@@ -536,7 +562,9 @@ restored.
   backup verification.
 - In-memory mutation and AOF append are protected by one process lock but do
   not form a storage transaction with rollback.
-- Replay terminates at the first malformed frame instead of attempting to
+- A complete synced operation can be replayed even if its client lost the
+  response, so callers must tolerate an ambiguous acknowledgement.
+- Replay truncates at the first malformed frame instead of attempting to
   discover an uncertain later command boundary.
 
 ---
@@ -669,12 +697,12 @@ Redis remains the repair source.
 
 ### Semantic Cache Partial Write
 
-Saving the entry record, pushing its key into `semantic_cache:index`, pruning,
-and adding it to FAISS are separate steps. A failure can leave an orphaned
-record or a durable record missing from the local FAISS index. Cache misses
-remain safe because the provider can still execute, and a worker rebuild can
-repair Redis-backed FAISS state. Automatic orphan reconciliation is not yet
-implemented.
+The inference miss path publishes the entry record, index update, pruning and
+completed flight state through one fenced datastore command. FAISS remains a
+separate process-local update after accepted publication; a crash can leave a
+durable Redis record missing from that worker's FAISS projection, which startup
+or fingerprint-based rebuilding repairs. The legacy standalone cache-save
+helper remains multi-command for non-inference callers.
 
 ### Provider Failure
 

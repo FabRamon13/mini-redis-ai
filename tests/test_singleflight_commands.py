@@ -265,6 +265,131 @@ class SingleFlightCommandTests(unittest.TestCase):
                     json.dumps({"state": "ACTIVE", "generation": 99}).encode(),
                 ])
 
+            with self.assertRaises(CommandError):
+                server.get_response([b"FLIGHTCOMMITSTATE", b"{}"])
+
+    def test_flight_commit_atomically_publishes_indexes_prunes_and_completes(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            server = self.make_server(tmpdir)
+            server.set(b"semantic_cache:old-1", b'{"entry_id":"old-1"}')
+            server.set(b"semantic_cache:old-2", b'{"entry_id":"old-2"}')
+            server.lpush(b"semantic_cache:index", b"semantic_cache:old-1")
+            server.lpush(b"semantic_cache:index", b"semantic_cache:old-2")
+            acquired = server.flight_acquire(b"flight", b"owner-a", b"1000")
+
+            committed = server.flight_commit(
+                b"flight",
+                b"owner-a",
+                str(acquired["generation"]).encode(),
+                b"semantic_cache:new",
+                b'{"entry_id":"new"}',
+                b"semantic_cache:index",
+                b"2",
+            )
+
+            self.assertEqual(committed, 1)
+            self.assertEqual(server.get(b"semantic_cache:new"), b'{"entry_id":"new"}')
+            self.assertEqual(
+                server.lrange(b"semantic_cache:index", b"0", b"-1"),
+                [b"semantic_cache:new", b"semantic_cache:old-2"],
+            )
+            self.assertIsNone(server.get(b"semantic_cache:old-1"))
+            status = server.flight_status(b"flight")
+            self.assertEqual(status["state"], "COMPLETED")
+            self.assertEqual(status["result_key"], "semantic_cache:new")
+            self.assertEqual(server.get(b"metrics:flight_publications"), b"1")
+
+    def test_stale_and_expired_flight_commits_change_nothing(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            clock = FakeClock()
+            server = self.make_server(tmpdir, clock)
+            server.flight_acquire(b"flight", b"owner-a", b"100")
+            clock.advance_ms(100)
+
+            for owner, generation in ((b"owner-a", b"1"), (b"other", b"1")):
+                with self.subTest(owner=owner):
+                    result = server.flight_commit(
+                        b"flight",
+                        owner,
+                        generation,
+                        b"semantic_cache:new",
+                        b'{"entry_id":"new"}',
+                        b"semantic_cache:index",
+                        b"10",
+                    )
+                    self.assertEqual(result, 0)
+
+            self.assertIsNone(server.get(b"semantic_cache:new"))
+            self.assertEqual(server.lrange(b"semantic_cache:index", b"0", b"-1"), [])
+            self.assertEqual(server.flight_status(b"flight")["state"], "EXPIRED")
+
+    def test_commit_append_failure_has_no_partial_cache_or_resolution(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            server = self.make_server(tmpdir)
+            server.flight_acquire(b"flight", b"owner-a", b"1000")
+            with patch.object(server, "_append_to_aof", side_effect=OSError("disk full")):
+                with self.assertRaises(OSError):
+                    server.flight_commit(
+                        b"flight",
+                        b"owner-a",
+                        b"1",
+                        b"semantic_cache:new",
+                        b'{"entry_id":"new"}',
+                        b"semantic_cache:index",
+                        b"10",
+                    )
+
+            self.assertIsNone(server.get(b"semantic_cache:new"))
+            self.assertEqual(server.lrange(b"semantic_cache:index", b"0", b"-1"), [])
+            self.assertEqual(server.flight_status(b"flight")["state"], "ACTIVE")
+
+    def test_completed_commit_replays_as_one_consistent_transition(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            server = self.make_server(tmpdir)
+            server.flight_acquire(b"flight", b"owner-a", b"1000")
+            server.flight_commit(
+                b"flight",
+                b"owner-a",
+                b"1",
+                b"semantic_cache:new",
+                b'{"entry_id":"new"}',
+                b"semantic_cache:index",
+                b"10",
+            )
+
+            reloaded = self.make_server(tmpdir)
+            self.assertEqual(reloaded.get(b"semantic_cache:new"), b'{"entry_id":"new"}')
+            self.assertEqual(
+                reloaded.lrange(b"semantic_cache:index", b"0", b"-1"),
+                [b"semantic_cache:new"],
+            )
+            self.assertEqual(reloaded.flight_status(b"flight")["state"], "COMPLETED")
+            self.assertEqual(reloaded.get(b"metrics:flight_publications"), b"1")
+            self.assertEqual(
+                reloaded.flight_acquire(b"other", b"owner-b", b"1000")["generation"],
+                2,
+            )
+
+    def test_terminal_flights_are_lazily_removed_after_retention(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            clock = FakeClock()
+            server = self.make_server(tmpdir, clock)
+            server.flight_acquire(b"flight", b"owner-a", b"1000")
+            server.flight_commit(
+                b"flight",
+                b"owner-a",
+                b"1",
+                b"semantic_cache:new",
+                b'{"entry_id":"new"}',
+                b"semantic_cache:index",
+                b"10",
+            )
+            clock.advance_ms(server.FLIGHT_TERMINAL_RETENTION_MS)
+
+            self.assertIsNone(server.flight_status(b"flight"))
+            self.assertNotIn(b"flight", server._flights)
+            self.assertEqual(server.get(b"semantic_cache:new"), b'{"entry_id":"new"}')
+
     def test_flush_clears_flights_but_does_not_reuse_generation(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             server = self.make_server(tmpdir)
@@ -311,6 +436,24 @@ class SingleFlightClientWrapperTests(unittest.TestCase):
             self.assertEqual(client.flight_fail("flight", "owner", 4, 500, "timeout"), 1)
             execute.assert_called_once_with(
                 "FLIGHTFAIL", "flight", "owner", "4", "500", "timeout"
+            )
+
+        with patch.object(client, "execute", return_value=1) as execute:
+            self.assertEqual(
+                client.flight_commit(
+                    "flight", "owner", 4, "cache:key", "{}", "cache:index", 100
+                ),
+                1,
+            )
+            execute.assert_called_once_with(
+                "FLIGHTCOMMIT",
+                "flight",
+                "owner",
+                "4",
+                "cache:key",
+                "{}",
+                "cache:index",
+                "100",
             )
 
 

@@ -5,7 +5,7 @@ import math
 import time, os
 from threading import RLock
 from redis_clone.exceptions import CommandError, Disconnect
-from redis_clone.protocol import ProtocolHandler, Error
+from redis_clone.protocol import ProtocolHandler, Error, MAX_BULK_BYTES
 
     
 
@@ -22,6 +22,8 @@ class Server:
     """
     MAX_FLIGHT_LEASE_MS = 300_000
     MAX_FLIGHT_FAILURE_COOLDOWN_MS = 60_000
+    FLIGHT_TERMINAL_RETENTION_MS = 60_000
+    FLIGHT_CLEANUP_INTERVAL_MS = 1_000
 
     def __init__(
         self,
@@ -61,6 +63,7 @@ class Server:
         self._flights = {}
         self._flight_generation = 0
         self._clock = clock or time.time
+        self._next_flight_cleanup_ms = 0
 
         self._commands = self.get_commands()
 
@@ -148,8 +151,10 @@ class Server:
             b"FLIGHTSTATUS": self.flight_status,
             b"FLIGHTRELEASE": self.flight_release,
             b"FLIGHTFAIL": self.flight_fail,
+            b"FLIGHTCOMMIT": self.flight_commit,
             # Internal AOF record. Rejected for live client requests.
             b"FLIGHTSTATE": self._restore_flight_state,
+            b"FLIGHTCOMMITSTATE": self._restore_flight_commit,
         }
 
     def _datastore_time_ms(self):
@@ -190,10 +195,26 @@ class Server:
             "retry_at_ms": record.get("retry_at_ms", 0),
             "resolved_at_ms": record.get("resolved_at_ms", 0),
             "error_code": record.get("error_code", ""),
+            "result_key": record.get("result_key", ""),
         }
         if role is not None:
             response["role"] = role
         return response
+
+    def _purge_terminal_flights(self, now_ms):
+        if now_ms < self._next_flight_cleanup_ms:
+            return 0
+        self._next_flight_cleanup_ms = now_ms + self.FLIGHT_CLEANUP_INTERVAL_MS
+        expired = []
+        for key, record in list(self._flights.items()):
+            if (
+                record.get("state") in {"COMPLETED", "RELEASED", "FAILED"}
+                and now_ms >= record.get("retire_at_ms", now_ms + 1)
+            ):
+                expired.append(key)
+        for key in expired:
+            self._flights.pop(key, None)
+        return len(expired)
 
     def _persist_flight_state(self, key, record):
         payload = json.dumps(
@@ -223,8 +244,14 @@ class Server:
         except (AttributeError, KeyError, TypeError, ValueError, UnicodeDecodeError, json.JSONDecodeError):
             raise CommandError("invalid persisted flight state")
 
-        if generation <= 0 or state not in {"ACTIVE", "RELEASED", "FAILED"}:
+        if generation <= 0 or state not in {"ACTIVE", "RELEASED", "FAILED", "COMPLETED"}:
             raise CommandError("invalid persisted flight state")
+
+        if state in {"RELEASED", "FAILED", "COMPLETED"} and "retire_at_ms" not in record:
+            record["retire_at_ms"] = (
+                int(record.get("resolved_at_ms", self._datastore_time_ms()))
+                + self.FLIGHT_TERMINAL_RETENTION_MS
+            )
 
         self._flights[key] = record
         self._flight_generation = max(self._flight_generation, generation)
@@ -242,6 +269,7 @@ class Server:
 
         with self._lock:
             now_ms = self._datastore_time_ms()
+            self._purge_terminal_flights(now_ms)
             current = self._flights.get(key)
             if current is not None:
                 if current["state"] == "ACTIVE" and now_ms < current["expires_at_ms"]:
@@ -249,6 +277,7 @@ class Server:
                 if current["state"] == "FAILED" and now_ms < current["retry_at_ms"]:
                     return self._flight_response(current, role="FOLLOWER")
 
+            takeover = current is not None and current.get("state") in {"ACTIVE", "FAILED"}
             generation = self._flight_generation + 1
             record = {
                 "state": "ACTIVE",
@@ -258,7 +287,9 @@ class Server:
                 "expires_at_ms": now_ms + lease_ms,
             }
             self._persist_flight_state(key, record)
-            return self._flight_response(record, role="LEADER")
+            response = self._flight_response(record, role="LEADER")
+            response["takeover"] = int(takeover)
+            return response
 
     def flight_renew(self, *args):
         self._require_args("FLIGHTRENEW", args, 4)
@@ -284,11 +315,12 @@ class Server:
         self._require_args("FLIGHTSTATUS", args, 1)
         key = args[0]
         with self._lock:
+            now_ms = self._datastore_time_ms()
+            self._purge_terminal_flights(now_ms)
             current = self._flights.get(key)
             if current is None:
                 return None
             state = current["state"]
-            now_ms = self._datastore_time_ms()
             if state == "ACTIVE" and now_ms >= current["expires_at_ms"]:
                 state = "EXPIRED"
             elif state == "FAILED" and now_ms >= current["retry_at_ms"]:
@@ -308,6 +340,7 @@ class Server:
                 "state": "RELEASED",
                 "generation": generation,
                 "resolved_at_ms": now_ms,
+                "retire_at_ms": now_ms + self.FLIGHT_TERMINAL_RETENTION_MS,
             }
             self._persist_flight_state(key, record)
             return 1
@@ -338,10 +371,152 @@ class Server:
                 "generation": generation,
                 "resolved_at_ms": now_ms,
                 "retry_at_ms": now_ms + cooldown_ms,
+                "retire_at_ms": now_ms + self.FLIGHT_TERMINAL_RETENTION_MS,
                 "error_code": error_code,
             }
             self._persist_flight_state(key, record)
             return 1
+
+    def flight_commit(self, *args):
+        self._require_args("FLIGHTCOMMIT", args, 7)
+        (
+            flight_key,
+            owner_id,
+            raw_generation,
+            cache_key,
+            cache_payload,
+            index_key,
+            raw_max_entries,
+        ) = args
+        generation = self._parse_generation(raw_generation)
+        try:
+            max_entries = int(raw_max_entries)
+        except (TypeError, ValueError):
+            raise CommandError("invalid semantic cache max entries")
+        if max_entries <= 0 or max_entries > 100_000:
+            raise CommandError("invalid semantic cache max entries")
+
+        cache_key_text = self._decode_nonempty_utf8(
+            "FLIGHTCOMMIT", "cache_key", cache_key, maximum=512
+        )
+        index_key_text = self._decode_nonempty_utf8(
+            "FLIGHTCOMMIT", "index_key", index_key, maximum=512
+        )
+        try:
+            cache_payload_text = cache_payload.decode("utf-8")
+            parsed_payload = json.loads(cache_payload_text)
+        except (AttributeError, UnicodeDecodeError, json.JSONDecodeError):
+            raise CommandError("invalid semantic cache payload")
+        if not isinstance(parsed_payload, dict):
+            raise CommandError("invalid semantic cache payload")
+
+        with self._lock:
+            now_ms = self._datastore_time_ms()
+            current = self._flights.get(flight_key)
+            if not self._flight_owner_matches(current, owner_id, generation, now_ms):
+                return 0
+
+            current_index = self._lists.get(index_key, [])
+            try:
+                current_keys = [
+                    item.decode("utf-8") if isinstance(item, bytes) else item
+                    for item in current_index
+                ]
+            except UnicodeDecodeError:
+                raise CommandError("semantic cache index contains invalid UTF-8")
+            if not all(isinstance(item, str) for item in current_keys):
+                raise CommandError("semantic cache index contains invalid keys")
+
+            retained_keys = [cache_key_text]
+            retained_keys.extend(item for item in current_keys if item != cache_key_text)
+            pruned_keys = retained_keys[max_entries:]
+            retained_keys = retained_keys[:max_entries]
+            flight_record = {
+                "state": "COMPLETED",
+                "generation": generation,
+                "resolved_at_ms": now_ms,
+                "retire_at_ms": now_ms + self.FLIGHT_TERMINAL_RETENTION_MS,
+                "result_key": cache_key_text,
+            }
+            current_publications = self._kv.get(b"metrics:flight_publications", b"0")
+            try:
+                publication_count = int(current_publications) + 1
+            except (TypeError, ValueError):
+                publication_count = 1
+            mutation = {
+                "flight_key": self._decode_nonempty_utf8(
+                    "FLIGHTCOMMIT", "flight_key", flight_key, maximum=512
+                ),
+                "flight": flight_record,
+                "cache_key": cache_key_text,
+                "cache_payload": cache_payload_text,
+                "index_key": index_key_text,
+                "retained_keys": retained_keys,
+                "pruned_keys": pruned_keys,
+                "publication_count": publication_count,
+            }
+            persisted = json.dumps(
+                mutation,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+            if len(persisted) > MAX_BULK_BYTES:
+                raise CommandError("persisted flight commit is too large")
+            self._append_to_aof([b"FLIGHTCOMMITSTATE", persisted], fsync=True)
+            self._apply_flight_commit(mutation)
+            return 1
+
+    def _restore_flight_commit(self, *args):
+        self._require_args("FLIGHTCOMMITSTATE", args, 1)
+        if not self._loading:
+            raise CommandError("FLIGHTCOMMITSTATE is reserved for AOF replay")
+        try:
+            mutation = json.loads(args[0].decode("utf-8"))
+            flight = mutation["flight"]
+            generation = int(flight["generation"])
+            valid = (
+                flight["state"] == "COMPLETED"
+                and generation > 0
+                and isinstance(mutation["flight_key"], str)
+                and isinstance(mutation["cache_key"], str)
+                and isinstance(mutation["cache_payload"], str)
+                and isinstance(mutation["index_key"], str)
+                and isinstance(mutation["retained_keys"], list)
+                and isinstance(mutation["pruned_keys"], list)
+                and all(isinstance(item, str) for item in mutation["retained_keys"])
+                and all(isinstance(item, str) for item in mutation["pruned_keys"])
+            )
+        except (AttributeError, KeyError, TypeError, ValueError, UnicodeDecodeError, json.JSONDecodeError):
+            valid = False
+        if not valid:
+            raise CommandError("invalid persisted flight commit")
+        self._apply_flight_commit(mutation)
+        return 1
+
+    def _apply_flight_commit(self, mutation):
+        flight_key = mutation["flight_key"].encode("utf-8")
+        cache_key = mutation["cache_key"].encode("utf-8")
+        index_key = mutation["index_key"].encode("utf-8")
+        self._kv[cache_key] = mutation["cache_payload"].encode("utf-8")
+        self._expiry.pop(cache_key, None)
+        self._lists[index_key] = [
+            item.encode("utf-8") for item in mutation["retained_keys"]
+        ]
+        for item in mutation["pruned_keys"]:
+            pruned_key = item.encode("utf-8")
+            if pruned_key != cache_key:
+                self._kv.pop(pruned_key, None)
+                self._expiry.pop(pruned_key, None)
+        self._flights[flight_key] = mutation["flight"]
+        if "publication_count" in mutation:
+            self._kv[b"metrics:flight_publications"] = str(
+                mutation["publication_count"]
+            ).encode("utf-8")
+            self._expiry.pop(b"metrics:flight_publications", None)
+        self._flight_generation = max(
+            self._flight_generation,
+            mutation["flight"]["generation"],
+        )
 
     def _flight_owner_matches(self, record, owner_id, generation, now_ms):
         if record is None or record.get("state") != "ACTIVE":

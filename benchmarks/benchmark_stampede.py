@@ -24,6 +24,15 @@ METRIC_KEYS = (
     "semantic_cache_misses",
     "provider_call_count",
     "linear_search_count",
+    "flight_leaders_acquired",
+    "flight_followers_joined",
+    "flight_publications",
+    "flight_takeovers",
+    "flight_failed",
+    "flight_fencing_rejections",
+    "flight_follower_wait_ms_total",
+    "flight_timeouts",
+    "flight_cache_recheck_hits",
 )
 
 
