@@ -20,7 +20,17 @@ class Server:
     TTL expiration
     Append only file persistence
     """
-    def __init__(self, host="127.0.0.1", port=31337, max_clients=64, aof_file="appendonly.aof"):
+    MAX_FLIGHT_LEASE_MS = 300_000
+    MAX_FLIGHT_FAILURE_COOLDOWN_MS = 60_000
+
+    def __init__(
+        self,
+        host="127.0.0.1",
+        port=31337,
+        max_clients=64,
+        aof_file="appendonly.aof",
+        clock=None,
+    ):
         #protects shared state across concurrent clients 
         self._lock = RLock()
 
@@ -45,6 +55,12 @@ class Server:
 
         #redis style list storage for queue operations
         self._lists = {}
+
+        # Distributed single-flight coordination state. Flight deadlines use
+        # the datastore clock; workers never supply timestamps.
+        self._flights = {}
+        self._flight_generation = 0
+        self._clock = clock or time.time
 
         self._commands = self.get_commands()
 
@@ -127,7 +143,218 @@ class Server:
             b"ENQUEUE": self.enqueue,
             b"EXPIREAT": self.expireat,
             b"INCRBY": self.incrby,
+            b"FLIGHTACQUIRE": self.flight_acquire,
+            b"FLIGHTRENEW": self.flight_renew,
+            b"FLIGHTSTATUS": self.flight_status,
+            b"FLIGHTRELEASE": self.flight_release,
+            b"FLIGHTFAIL": self.flight_fail,
+            # Internal AOF record. Rejected for live client requests.
+            b"FLIGHTSTATE": self._restore_flight_state,
         }
+
+    def _datastore_time_ms(self):
+        return int(self._clock() * 1000)
+
+    def _parse_positive_bounded_ms(self, command, raw_value, maximum):
+        try:
+            value = int(raw_value)
+        except (TypeError, ValueError):
+            raise CommandError(f"{command} duration must be an integer")
+        if value <= 0 or value > maximum:
+            raise CommandError(f"{command} duration must be between 1 and {maximum} ms")
+        return value
+
+    def _parse_generation(self, raw_generation):
+        try:
+            generation = int(raw_generation)
+        except (TypeError, ValueError):
+            raise CommandError("invalid flight generation")
+        if generation <= 0:
+            raise CommandError("invalid flight generation")
+        return generation
+
+    def _decode_nonempty_utf8(self, command, field, value, maximum=256):
+        try:
+            decoded = value.decode("utf-8") if isinstance(value, bytes) else value
+        except UnicodeDecodeError:
+            raise CommandError(f"{command} {field} must be valid UTF-8")
+        if not isinstance(decoded, str) or not decoded or len(decoded) > maximum:
+            raise CommandError(f"{command} {field} is invalid")
+        return decoded
+
+    def _flight_response(self, record, state=None, role=None):
+        response = {
+            "state": state or record["state"],
+            "generation": record["generation"],
+            "expires_at_ms": record.get("expires_at_ms", 0),
+            "retry_at_ms": record.get("retry_at_ms", 0),
+            "resolved_at_ms": record.get("resolved_at_ms", 0),
+            "error_code": record.get("error_code", ""),
+        }
+        if role is not None:
+            response["role"] = role
+        return response
+
+    def _persist_flight_state(self, key, record):
+        payload = json.dumps(
+            record,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        # Write ahead of the in-memory mutation. This prevents an AOF append
+        # error from granting ownership that cannot be replayed.
+        self._append_to_aof([b"FLIGHTSTATE", key, payload], fsync=True)
+        self._flights[key] = record
+        self._flight_generation = max(
+            self._flight_generation,
+            record["generation"],
+        )
+
+    def _restore_flight_state(self, *args):
+        self._require_args("FLIGHTSTATE", args, 2)
+        if not self._loading:
+            raise CommandError("FLIGHTSTATE is reserved for AOF replay")
+
+        key, payload = args
+        try:
+            record = json.loads(payload.decode("utf-8"))
+            generation = int(record["generation"])
+            state = record["state"]
+        except (AttributeError, KeyError, TypeError, ValueError, UnicodeDecodeError, json.JSONDecodeError):
+            raise CommandError("invalid persisted flight state")
+
+        if generation <= 0 or state not in {"ACTIVE", "RELEASED", "FAILED"}:
+            raise CommandError("invalid persisted flight state")
+
+        self._flights[key] = record
+        self._flight_generation = max(self._flight_generation, generation)
+        return 1
+
+    def flight_acquire(self, *args):
+        self._require_args("FLIGHTACQUIRE", args, 3)
+        key, owner_id, raw_lease_ms = args
+        lease_ms = self._parse_positive_bounded_ms(
+            "FLIGHTACQUIRE",
+            raw_lease_ms,
+            self.MAX_FLIGHT_LEASE_MS,
+        )
+        owner = self._decode_nonempty_utf8("FLIGHTACQUIRE", "owner_id", owner_id)
+
+        with self._lock:
+            now_ms = self._datastore_time_ms()
+            current = self._flights.get(key)
+            if current is not None:
+                if current["state"] == "ACTIVE" and now_ms < current["expires_at_ms"]:
+                    return self._flight_response(current, role="FOLLOWER")
+                if current["state"] == "FAILED" and now_ms < current["retry_at_ms"]:
+                    return self._flight_response(current, role="FOLLOWER")
+
+            generation = self._flight_generation + 1
+            record = {
+                "state": "ACTIVE",
+                "owner_id": owner,
+                "generation": generation,
+                "acquired_at_ms": now_ms,
+                "expires_at_ms": now_ms + lease_ms,
+            }
+            self._persist_flight_state(key, record)
+            return self._flight_response(record, role="LEADER")
+
+    def flight_renew(self, *args):
+        self._require_args("FLIGHTRENEW", args, 4)
+        key, owner_id, raw_generation, raw_lease_ms = args
+        generation = self._parse_generation(raw_generation)
+        lease_ms = self._parse_positive_bounded_ms(
+            "FLIGHTRENEW",
+            raw_lease_ms,
+            self.MAX_FLIGHT_LEASE_MS,
+        )
+
+        with self._lock:
+            now_ms = self._datastore_time_ms()
+            current = self._flights.get(key)
+            if not self._flight_owner_matches(current, owner_id, generation, now_ms):
+                return 0
+            record = dict(current)
+            record["expires_at_ms"] = now_ms + lease_ms
+            self._persist_flight_state(key, record)
+            return self._flight_response(record)
+
+    def flight_status(self, *args):
+        self._require_args("FLIGHTSTATUS", args, 1)
+        key = args[0]
+        with self._lock:
+            current = self._flights.get(key)
+            if current is None:
+                return None
+            state = current["state"]
+            now_ms = self._datastore_time_ms()
+            if state == "ACTIVE" and now_ms >= current["expires_at_ms"]:
+                state = "EXPIRED"
+            elif state == "FAILED" and now_ms >= current["retry_at_ms"]:
+                state = "RETRYABLE"
+            return self._flight_response(current, state=state)
+
+    def flight_release(self, *args):
+        self._require_args("FLIGHTRELEASE", args, 3)
+        key, owner_id, raw_generation = args
+        generation = self._parse_generation(raw_generation)
+        with self._lock:
+            now_ms = self._datastore_time_ms()
+            current = self._flights.get(key)
+            if not self._flight_owner_matches(current, owner_id, generation, now_ms):
+                return 0
+            record = {
+                "state": "RELEASED",
+                "generation": generation,
+                "resolved_at_ms": now_ms,
+            }
+            self._persist_flight_state(key, record)
+            return 1
+
+    def flight_fail(self, *args):
+        self._require_args("FLIGHTFAIL", args, 5)
+        key, owner_id, raw_generation, raw_cooldown_ms, raw_error_code = args
+        generation = self._parse_generation(raw_generation)
+        cooldown_ms = self._parse_positive_bounded_ms(
+            "FLIGHTFAIL",
+            raw_cooldown_ms,
+            self.MAX_FLIGHT_FAILURE_COOLDOWN_MS,
+        )
+        error_code = self._decode_nonempty_utf8(
+            "FLIGHTFAIL",
+            "error_code",
+            raw_error_code,
+            maximum=128,
+        )
+
+        with self._lock:
+            now_ms = self._datastore_time_ms()
+            current = self._flights.get(key)
+            if not self._flight_owner_matches(current, owner_id, generation, now_ms):
+                return 0
+            record = {
+                "state": "FAILED",
+                "generation": generation,
+                "resolved_at_ms": now_ms,
+                "retry_at_ms": now_ms + cooldown_ms,
+                "error_code": error_code,
+            }
+            self._persist_flight_state(key, record)
+            return 1
+
+    def _flight_owner_matches(self, record, owner_id, generation, now_ms):
+        if record is None or record.get("state") != "ACTIVE":
+            return False
+        try:
+            supplied_owner = owner_id.decode("utf-8") if isinstance(owner_id, bytes) else owner_id
+        except UnicodeDecodeError:
+            return False
+        return (
+            record.get("owner_id") == supplied_owner
+            and record.get("generation") == generation
+            and now_ms < record.get("expires_at_ms", 0)
+        )
     def incr(self, *args):
         self._require_args("INCR", args, 1)
         key = args[0]
@@ -259,6 +486,7 @@ class Server:
             self._kv.clear()
             self._expiry.clear()
             self._lists.clear()
+            self._flights.clear()
 
             self._append_to_aof([b"FLUSH"])
 
@@ -665,21 +893,31 @@ class Server:
         # duplicating commands in the append-only log.
         self._loading = True
 
+        truncate_offset = None
         try:
             with open(self._aof_file, "rb") as f:
                 while True:
+                    record_offset = f.tell()
                     try:
                         data = self._protocol.handle_request(f)
                     except (CommandError, Disconnect):
+                        if record_offset < os.path.getsize(self._aof_file):
+                            truncate_offset = record_offset
                         break
 
                     self.get_response(data)
         finally:
             self._loading = False 
 
+        if truncate_offset is not None:
+            with open(self._aof_file, "r+b") as f:
+                f.truncate(truncate_offset)
+                f.flush()
+                os.fsync(f.fileno())
+
 
     
-    def _append_to_aof(self, command_parts):
+    def _append_to_aof(self, command_parts, fsync=False):
         """
         Persist mutating commands to the append-only log.
 
@@ -690,8 +928,21 @@ class Server:
             #skip writes while replaying persistence data
             return 
         
-        with open(self._aof_file, "ab") as f:
-            self._protocol.write_response(f, command_parts)
+        starting_size = os.path.getsize(self._aof_file) if os.path.exists(self._aof_file) else 0
+        try:
+            with open(self._aof_file, "ab") as f:
+                self._protocol.write_response(f, command_parts)
+                if fsync:
+                    os.fsync(f.fileno())
+        except Exception as append_error:
+            try:
+                with open(self._aof_file, "r+b") as f:
+                    f.truncate(starting_size)
+                    f.flush()
+                    os.fsync(f.fileno())
+            except Exception as rollback_error:
+                raise OSError("AOF append and rollback both failed") from rollback_error
+            raise append_error
 
     def lrange(self, *args):
         self._require_args("LRANGE", args, 3)
