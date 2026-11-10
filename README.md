@@ -1,8 +1,49 @@
 # Mini Redis AI Infrastructure Platform
 
-A Redis-inspired AI inference platform built from first principles, combining
-a custom TCP datastore, durable worker queue, semantic caching, FAISS vector
-search, production-style observability, CI/CD, and AWS deployment.
+A distributed AI inference platform built to explore how backend infrastructure 
+can reduce redundant model calls while providing durable asynchronous execution, 
+failure recovery, and production style observability.
+
+Rather than relying on Redis as the core datastore, the project implements its
+own Redis inspired TCP datastore and builds an inference system around it using
+a durable worker queue, semantic caching, FAISS vector search, FastAPI, Docker,
+Prometheus/Grafana, CI/CD, and AWS EC2.
+
+## At a Glance
+
+| | |
+|---|---|
+| 🧪 **Testing** | 170 tests — 165 passing, 5 environment-dependent skipped |
+| 🧠 **Semantic Cache** | 56.5% cache hit rate on deployed validation workload |
+| ⚡ **Provider Calls Avoided** | 26 of 46 requests served without another provider call |
+| 🎯 **Cache Correctness** | 0 false-positive cache hits |
+| ⚙️ **Job Reliability** | 46/46 completed, 0 failed or dead jobs |
+| ☁️ **Deployment** | Docker Compose on AWS EC2 with GitHub Actions CI/CD |
+| 📊 **Observability** | Prometheus metrics, Grafana dashboard, structured JSON logs |
+
+## Why This Project Exists
+
+LLM applications can repeatedly perform expensive inference for requests
+that are semantically equivalent, while asynchronous workloads introduce a
+different set of infrastructure problems: durability, retries, worker failures,
+duplicate execution, state recovery, and observability.
+
+This project explores those problems as one system.
+
+The platform combines:
+
+- a custom TCP datastore with RESP-style protocol parsing and append-only
+  persistence;
+- a durable multi-worker queue with leases, heartbeats, retries, and stale-claim
+  recovery;
+- semantic caching using sentence-transformer embeddings and FAISS vector
+  search;
+- asynchronous FastAPI → datastore → worker execution;
+- Prometheus metrics, Grafana dashboards, and correlated structured logging;
+- containerized deployment to AWS EC2 through GitHub Actions.
+
+Redis state remains the durable source of truth while FAISS acts as a
+rebuildable worker local acceleration layer.
 
 ## Project Highlights
 
@@ -18,11 +59,9 @@ search, production-style observability, CI/CD, and AWS deployment.
   heavy ML dependencies remain worker-only.
 - Automated validation and EC2 deployment with GitHub Actions and Docker
   Compose.
-- Validated the system with a 170-test suite (165 passing and 5
-  environment-dependent tests skipped) and a deployed 46-request workload:
-  56.5% cache hits, 26 provider calls avoided, zero false-positive cache hits,
-  and zero failed or dead jobs.
-
+- Validated correctness and failure behavior through a 170-test suite and a
+  reproducible deployed semantic-cache workload.
+  
 ## Architecture
 
 ```mermaid
