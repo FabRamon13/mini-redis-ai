@@ -6,6 +6,7 @@ import socket
 import uuid
 import threading
 import logging
+import random
 
 
 from redis_clone.client import Client
@@ -14,7 +15,7 @@ from worker.semantic_cache import (
     get_model_id,
     get_model_revision,
     get_semantic_cache_entries,
-    save_semantic_cache_entry,
+    build_semantic_cache_entry,
 )
 from redis_clone.exceptions import Disconnect
 from ai.vector_store import VectorStore
@@ -24,6 +25,12 @@ from worker.faiss_index import add_to_faiss
 from worker.faiss_index import get_faiss_index
 from worker.faiss_index import rebuild_faiss_indexes
 from observability.logging import configure_json_logger, log_event
+from worker.singleflight import (
+    FlightLeaseRenewer,
+    FlightOwnershipLost,
+    FlightWaitTimeout,
+    derive_flight_key,
+)
 
 
 logger = configure_json_logger("worker")
@@ -53,6 +60,12 @@ def load_non_negative_float(name, default):
     if not math.isfinite(parsed) or parsed < 0:
         raise ValueError(f"{name} must be a non-negative number")
 
+    return parsed
+
+def load_positive_float(name, default):
+    parsed = load_non_negative_float(name, default)
+    if parsed <= 0:
+        raise ValueError(f"{name} must be positive")
     return parsed
 
 def load_positive_int(name, default, value=None):
@@ -90,6 +103,24 @@ WORKER_HEARTBEAT_INTERVAL_SECONDS = load_positive_int("WORKER_HEARTBEAT_INTERVAL
 SEMANTIC_CACHE_THRESHOLD = load_semantic_cache_threshold()
 SEMANTIC_CACHE_MAX_ENTRIES = load_positive_int("SEMANTIC_CACHE_MAX_ENTRIES", 1000)
 VECTOR_SEARCH_ENGINE = load_vector_search_engine()
+FLIGHT_LEASE_MS = load_positive_int("FLIGHT_LEASE_MS", 5000)
+FLIGHT_FAILURE_COOLDOWN_MS = load_positive_int("FLIGHT_FAILURE_COOLDOWN_MS", 1000)
+FLIGHT_WAIT_TIMEOUT_SECONDS = load_positive_float("FLIGHT_WAIT_TIMEOUT_SECONDS", 30.0)
+FLIGHT_PROVIDER_TIMEOUT_SECONDS = load_positive_float(
+    "FLIGHT_PROVIDER_TIMEOUT_SECONDS", 30.0
+)
+FLIGHT_POLL_MIN_SECONDS = load_positive_float("FLIGHT_POLL_MIN_SECONDS", 0.05)
+FLIGHT_POLL_MAX_SECONDS = load_positive_float("FLIGHT_POLL_MAX_SECONDS", 0.5)
+SINGLEFLIGHT_FAULT_HOOKS_ENABLED = (
+    os.getenv("SINGLEFLIGHT_FAULT_HOOKS_ENABLED", "") == "benchmark-only"
+)
+SINGLEFLIGHT_FAULT_PHASE = os.getenv("SINGLEFLIGHT_FAULT_PHASE", "")
+SINGLEFLIGHT_FAULT_GENERATION = load_positive_int(
+    "SINGLEFLIGHT_FAULT_GENERATION", 1
+)
+SINGLEFLIGHT_FAULT_PAUSE_SECONDS = load_non_negative_float(
+    "SINGLEFLIGHT_FAULT_PAUSE_SECONDS", 0.0
+)
 
 
 def increment_metric(client, key):
@@ -105,6 +136,309 @@ def process_demo_task(job):
     return {
         "message": "Job completed successfully"
     }
+
+def _singleflight_fault_pause(phase, generation, request_id, job_id):
+    if (
+        not SINGLEFLIGHT_FAULT_HOOKS_ENABLED
+        or phase not in {
+            "after_acquire_before_provider",
+            "during_provider",
+            "after_commit_before_finish",
+        }
+        or SINGLEFLIGHT_FAULT_PHASE != phase
+        or generation != SINGLEFLIGHT_FAULT_GENERATION
+        or SINGLEFLIGHT_FAULT_PAUSE_SECONDS <= 0
+    ):
+        return
+    log_event(
+        logger,
+        "singleflight_fault_pause",
+        level=logging.WARNING,
+        request_id=request_id,
+        job_id=job_id,
+        phase=phase,
+        generation=generation,
+        pause_seconds=SINGLEFLIGHT_FAULT_PAUSE_SECONDS,
+    )
+    time.sleep(SINGLEFLIGHT_FAULT_PAUSE_SECONDS)
+
+def _format_top_matches(top_matches):
+    return [
+        {
+            "entry_id": item["entry"].get("entry_id"),
+            "prompt": item["entry"].get("prompt"),
+            "provider": item["entry"].get("provider"),
+            "model_id": item["entry"].get("model_id"),
+            "model_revision": item["entry"].get("model_revision"),
+            "similarity_score": round(item["similarity_score"], 4),
+        }
+        for item in top_matches
+    ]
+
+def _authoritative_cache_match(client, vector, provider, model_id, model_revision):
+    entries = get_semantic_cache_entries(client)
+    matches = VectorStore(entries).search_top_k(
+        embedding=vector,
+        provider=provider,
+        model_id=model_id,
+        model_revision=model_revision,
+        k=3,
+    )
+    best_match = matches[0] if matches else None
+    if best_match is None or best_match["similarity_score"] < SEMANTIC_CACHE_THRESHOLD:
+        return None, matches
+    return best_match, matches
+
+def _cache_hit_result(prompt, provider, best_match, top_matches):
+    return {
+        "prompt": prompt,
+        "provider": provider,
+        "cache": "hit",
+        "matched_prompt": best_match["entry"]["prompt"],
+        "similarity_score": round(best_match["similarity_score"], 4),
+        "top_matches": _format_top_matches(top_matches),
+        "response": best_match["entry"]["response"],
+    }
+
+def _record_cache_recheck_hit(client):
+    increment_metric(client, "metrics:flight_cache_recheck_hits")
+    increment_metric(client, "metrics:semantic_cache_hits")
+
+def _fail_owned_flight(client, flight_key, owner_id, generation, error_code):
+    try:
+        failed = client.flight_fail(
+            flight_key,
+            owner_id,
+            generation,
+            FLIGHT_FAILURE_COOLDOWN_MS,
+            error_code,
+        )
+    except Exception:
+        return False
+    if failed:
+        increment_metric(client, "metrics:flight_failed")
+        return True
+    increment_metric(client, "metrics:flight_fencing_rejections")
+    return False
+
+def _run_flight_leader(
+    client,
+    flight_key,
+    owner_id,
+    acquisition,
+    prompt,
+    provider,
+    model_id,
+    model_revision,
+    vector,
+    use_faiss,
+    initial_best_score,
+    initial_top_matches,
+    request_id,
+    job_id,
+):
+    increment_metric(client, "metrics:flight_leaders_acquired")
+    if acquisition.takeover:
+        increment_metric(client, "metrics:flight_takeovers")
+
+    recheck, recheck_matches = _authoritative_cache_match(
+        client, vector, provider, model_id, model_revision
+    )
+    if recheck is not None:
+        _record_cache_recheck_hit(client)
+        released = client.flight_release(flight_key, owner_id, acquisition.generation)
+        if not released:
+            increment_metric(client, "metrics:flight_fencing_rejections")
+        return _cache_hit_result(prompt, provider, recheck, recheck_matches)
+
+    _singleflight_fault_pause(
+        "after_acquire_before_provider",
+        acquisition.generation,
+        request_id,
+        job_id,
+    )
+
+    renewer = FlightLeaseRenewer(
+        client=client,
+        flight_key=flight_key,
+        owner_id=owner_id,
+        generation=acquisition.generation,
+        lease_ms=FLIGHT_LEASE_MS,
+        hard_deadline_seconds=FLIGHT_PROVIDER_TIMEOUT_SECONDS,
+    ).start()
+
+    try:
+        time.sleep(DEMO_INFERENCE_DELAY_SECONDS)
+        renewer.ensure_owned()
+        provider_start = time.perf_counter()
+        increment_metric(client, "metrics:provider_call_count")
+        try:
+            _singleflight_fault_pause(
+                "during_provider",
+                acquisition.generation,
+                request_id,
+                job_id,
+            )
+            response = generate_response(prompt, provider=provider)
+        finally:
+            provider_latency_ms = int((time.perf_counter() - provider_start) * 1000)
+            increment_metric_by(
+                client,
+                "metrics:provider_latency_ms_total",
+                provider_latency_ms,
+            )
+        renewer.ensure_owned()
+        log_event(
+            logger,
+            "provider_call_completed",
+            request_id=request_id,
+            job_id=job_id,
+            provider=provider,
+            duration_ms=provider_latency_ms,
+        )
+
+        entry = build_semantic_cache_entry(prompt, vector, response, provider)
+        cache_key = f"semantic_cache:{entry['entry_id']}"
+        committed = client.flight_commit(
+            flight_key,
+            owner_id,
+            acquisition.generation,
+            cache_key,
+            json.dumps(entry),
+            "semantic_cache:index",
+            SEMANTIC_CACHE_MAX_ENTRIES,
+        )
+        if not committed:
+            increment_metric(client, "metrics:flight_fencing_rejections")
+            cached, cached_matches = _authoritative_cache_match(
+                client, vector, provider, model_id, model_revision
+            )
+            if cached is not None:
+                _record_cache_recheck_hit(client)
+                return _cache_hit_result(prompt, provider, cached, cached_matches)
+            raise FlightOwnershipLost("fenced flight publication was rejected")
+
+        if use_faiss:
+            add_to_faiss(entry)
+        _singleflight_fault_pause(
+            "after_commit_before_finish",
+            acquisition.generation,
+            request_id,
+            job_id,
+        )
+        return {
+            "prompt": prompt,
+            "provider": provider,
+            "cache": "miss",
+            "similarity_score": round(initial_best_score, 4),
+            "top_matches": _format_top_matches(initial_top_matches),
+            "embedding_dimensions": len(vector),
+            "response": response,
+        }
+    except Exception as exc:
+        _fail_owned_flight(
+            client,
+            flight_key,
+            owner_id,
+            acquisition.generation,
+            type(exc).__name__[:128],
+        )
+        raise
+    finally:
+        renewer.stop()
+
+def _coordinate_cache_miss(
+    client,
+    prompt,
+    provider,
+    model_id,
+    model_revision,
+    vector,
+    use_faiss,
+    initial_best_score,
+    initial_top_matches,
+    request_id,
+    job_id,
+):
+    flight_key = derive_flight_key(
+        prompt=prompt,
+        provider=provider,
+        model_id=model_id,
+        model_revision=model_revision,
+        generation_config={},
+    )
+    owner_id = str(uuid.uuid4())
+    deadline = time.monotonic() + FLIGHT_WAIT_TIMEOUT_SECONDS
+    backoff = FLIGHT_POLL_MIN_SECONDS
+    follower_started = None
+    should_acquire = True
+
+    while time.monotonic() < deadline:
+        if should_acquire:
+            acquisition = client.flight_acquire(flight_key, owner_id, FLIGHT_LEASE_MS)
+            if acquisition.role == "LEADER":
+                if follower_started is not None:
+                    increment_metric_by(
+                        client,
+                        "metrics:flight_follower_wait_ms_total",
+                        round((time.monotonic() - follower_started) * 1000),
+                    )
+                return _run_flight_leader(
+                    client,
+                    flight_key,
+                    owner_id,
+                    acquisition,
+                    prompt,
+                    provider,
+                    model_id,
+                    model_revision,
+                    vector,
+                    use_faiss,
+                    initial_best_score,
+                    initial_top_matches,
+                    request_id,
+                    job_id,
+                )
+
+            should_acquire = False
+            if follower_started is None:
+                follower_started = time.monotonic()
+                increment_metric(client, "metrics:flight_followers_joined")
+
+        status = client.flight_status(flight_key)
+        if status is None or status.state in {"EXPIRED", "RETRYABLE"}:
+            should_acquire = True
+            continue
+        if status.state in {"COMPLETED", "RELEASED"}:
+            cached, cached_matches = _authoritative_cache_match(
+                client, vector, provider, model_id, model_revision
+            )
+            if cached is not None:
+                _record_cache_recheck_hit(client)
+                increment_metric_by(
+                    client,
+                    "metrics:flight_follower_wait_ms_total",
+                    round((time.monotonic() - follower_started) * 1000),
+                )
+                return _cache_hit_result(prompt, provider, cached, cached_matches)
+            should_acquire = True
+            continue
+
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        sleep_for = min(remaining, random.uniform(backoff, backoff * 1.25))
+        time.sleep(sleep_for)
+        backoff = min(FLIGHT_POLL_MAX_SECONDS, backoff * 2)
+
+    if follower_started is not None:
+        increment_metric_by(
+            client,
+            "metrics:flight_follower_wait_ms_total",
+            round((time.monotonic() - follower_started) * 1000),
+        )
+    increment_metric(client, "metrics:flight_timeouts")
+    raise FlightWaitTimeout("flight did not resolve before follower deadline")
 
 def process_inference(job,client):
     job_id = job.get("id")
@@ -197,17 +531,7 @@ def process_inference(job,client):
         duration_ms=round(search_latency_ms, 4),
     )
 
-    formatted_top_matches = [
-        {
-            "entry_id": item["entry"].get("entry_id"),
-            "prompt": item["entry"].get("prompt"),
-            "provider": item["entry"].get("provider"),
-            "model_id": item["entry"].get("model_id"),
-            "model_revision": item["entry"].get("model_revision"),
-            "similarity_score": round(item["similarity_score"], 4),
-        }
-        for item in top_matches
-    ]
+    formatted_top_matches = _format_top_matches(top_matches)
 
     best_match = top_matches[0] if top_matches else None
     best_score = best_match["similarity_score"] if best_match else 0.0
@@ -224,15 +548,7 @@ def process_inference(job,client):
             similarity_score=round(best_score, 4),
         )
 
-        return {
-            "prompt": prompt,
-            "provider": provider,
-            "cache": "hit",
-            "matched_prompt": best_match["entry"]["prompt"],
-            "similarity_score": round(best_score, 4),
-            "top_matches": formatted_top_matches,
-            "response": best_match["entry"]["response"],
-        }
+        return _cache_hit_result(prompt, provider, best_match, top_matches)
     
     increment_metric(client, "metrics:semantic_cache_misses")
     log_event(
@@ -245,46 +561,19 @@ def process_inference(job,client):
         similarity_score=round(best_score, 4),
     )
 
-    time.sleep(DEMO_INFERENCE_DELAY_SECONDS)
-
-    provider_start = time.perf_counter()
-
-    response = generate_response(prompt, provider = provider)
-
-    provider_latency_ms = int((time.perf_counter() - provider_start) * 1000)
-
-    increment_metric(client, "metrics:provider_call_count")
-    increment_metric_by(client, "metrics:provider_latency_ms_total", provider_latency_ms)
-    log_event(
-        logger,
-        "provider_call_completed",
+    return _coordinate_cache_miss(
+        client=client,
+        prompt=prompt,
+        provider=provider,
+        model_id=model_id,
+        model_revision=model_revision,
+        vector=vector,
+        use_faiss=use_faiss,
+        initial_best_score=best_score,
+        initial_top_matches=top_matches,
         request_id=request_id,
         job_id=job_id,
-        provider=provider,
-        duration_ms=provider_latency_ms,
     )
-
-    saved_entry = save_semantic_cache_entry(
-        client,
-        prompt,
-        vector,
-        response,
-        provider,
-        SEMANTIC_CACHE_MAX_ENTRIES,
-    )
-
-    if use_faiss:
-        add_to_faiss(saved_entry)
-    
-    return {
-        "prompt": prompt,
-        "provider": provider,
-        "cache": "miss",
-        "similarity_score": round(best_score, 4),
-        "top_matches": formatted_top_matches,
-        "embedding_dimensions": len(vector),
-        "response": response,
-    }
 
 def process_job(job,client):
     job_type = job["type"]

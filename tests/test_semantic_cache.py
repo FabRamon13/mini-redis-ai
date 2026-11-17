@@ -4,6 +4,8 @@ import uuid
 from unittest.mock import ANY, Mock
 from unittest.mock import patch
 
+from redis_clone.client import FlightAcquireResult, FlightState
+
 from worker.worker import load_non_negative_float
 from worker.worker import load_semantic_cache_threshold
 from worker.worker import load_vector_search_engine
@@ -13,6 +15,7 @@ from worker.faiss_index import get_faiss_index
 from worker.faiss_index import get_faiss_index_size
 from worker.faiss_index import reset_faiss_indexes
 from worker.semantic_cache import get_model_id
+from worker.semantic_cache import build_semantic_cache_entry
 from worker.semantic_cache import get_semantic_cache_entries
 from worker.semantic_cache import prune_semantic_cache
 from worker.semantic_cache import save_semantic_cache_entry
@@ -22,6 +25,8 @@ class MemoryClient:
     def __init__(self):
         self.data = {}
         self.lists = {}
+        self.flight_generation = 0
+        self.flight = None
 
     def get(self, key):
         value = self.data.get(key)
@@ -66,6 +71,75 @@ class MemoryClient:
         removed = len(items) - len(remaining)
         self.lists[key] = remaining
         return removed
+
+    def flight_acquire(self, key, owner_id, lease_ms):
+        self.flight_generation += 1
+        self.flight = {
+            "key": key,
+            "owner_id": owner_id,
+            "generation": self.flight_generation,
+            "state": "ACTIVE",
+        }
+        return FlightAcquireResult(
+            role="LEADER",
+            state="ACTIVE",
+            generation=self.flight_generation,
+            expires_at_ms=9999999999999,
+        )
+
+    def flight_renew(self, key, owner_id, generation, lease_ms):
+        if (
+            self.flight
+            and self.flight["state"] == "ACTIVE"
+            and self.flight["key"] == key
+            and self.flight["owner_id"] == owner_id
+            and self.flight["generation"] == generation
+        ):
+            return FlightState("ACTIVE", generation, expires_at_ms=9999999999999)
+        return None
+
+    def flight_status(self, key):
+        if not self.flight or self.flight["key"] != key:
+            return None
+        return FlightState(
+            self.flight["state"],
+            self.flight["generation"],
+            result_key=self.flight.get("result_key", ""),
+        )
+
+    def flight_release(self, key, owner_id, generation):
+        if self.flight_renew(key, owner_id, generation, 1) is None:
+            return 0
+        self.flight["state"] = "RELEASED"
+        return 1
+
+    def flight_fail(self, key, owner_id, generation, cooldown_ms, error_code):
+        if self.flight_renew(key, owner_id, generation, 1) is None:
+            return 0
+        self.flight["state"] = "FAILED"
+        return 1
+
+    def flight_commit(
+        self,
+        flight_key,
+        owner_id,
+        generation,
+        cache_key,
+        cache_payload,
+        index_key,
+        max_entries,
+    ):
+        if self.flight_renew(flight_key, owner_id, generation, 1) is None:
+            return 0
+        self.data[cache_key] = cache_payload
+        index = [cache_key]
+        index.extend(item for item in self.lists.get(index_key, []) if item != cache_key)
+        self.lists[index_key] = index[:max_entries]
+        for old_key in index[max_entries:]:
+            self.data.pop(old_key, None)
+        self.flight["state"] = "COMPLETED"
+        self.flight["result_key"] = cache_key
+        return 1
 
 
 class WorkerFaissStartupTests(unittest.TestCase):
@@ -117,6 +191,17 @@ class WorkerFaissStartupTests(unittest.TestCase):
 
 
 class SemanticCacheTests(unittest.TestCase):
+    def test_build_semantic_cache_entry_is_valid_without_writing(self):
+        entry = build_semantic_cache_entry(
+            "prompt",
+            [1.0, 0.0],
+            {"answer": "response"},
+            "fake",
+        )
+        self.assertEqual(entry["prompt"], "prompt")
+        self.assertEqual(entry["model_id"], "hash-embedding-v1")
+        self.assertEqual(entry["embedding_dimensions"], 2)
+
     def test_demo_delay_accepts_non_negative_number(self):
         with patch.dict("os.environ", {"DEMO_DELAY": "1.5"}):
             self.assertEqual(load_non_negative_float("DEMO_DELAY", 0.0), 1.5)

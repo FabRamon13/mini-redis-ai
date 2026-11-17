@@ -1,0 +1,800 @@
+{
+  "configuration": {
+    "base_url": "http://127.0.0.1:18000",
+    "http_timeout_seconds": 10.0,
+    "inference_delay_seconds": 1.0,
+    "job_timeout_seconds": 120.0,
+    "poll_seconds": 0.05,
+    "poll_workers": 32,
+    "provider": "fake",
+    "queue_capacity": 200,
+    "request_count": 100,
+    "worker_count": 4
+  },
+  "environment": {
+    "compose_project_name": "mini-redis-stampede-20261109-02",
+    "docker_compose_version": "Docker Compose version v5.1.3",
+    "docker_version": "Docker version 29.5.2, build 79eb04c",
+    "machine": "arm64",
+    "platform": "macOS-26.2-arm64-arm-64bit",
+    "python_version": "3.11.9"
+  },
+  "finished_at": "2026-11-10T01:32:40.950086+00:00",
+  "git_commit": "2de6466833adbd03ee74250738b1938163c45efa",
+  "git_worktree_dirty": true,
+  "jobs": [
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "0392fa06-7ebe-4a54-8c0f-ff2c71f9d74a",
+      "latency_ms": 1180.1905420143157,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "04519afd-85b4-4e77-ad00-25a03f7b17a8",
+      "latency_ms": 1149.3831250118092,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "06060ee0-cf7f-480f-a64d-761f1d21d9fe",
+      "latency_ms": 1167.114500014577,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "0d21fc80-b45d-4feb-9764-19c3e1643ee1",
+      "latency_ms": 1115.6581249670126,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "0ffd614a-1949-4b18-9ada-8b2c02987132",
+      "latency_ms": 1143.3652500272729,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "130e5bf5-d0b3-428c-866f-db2215c53ff2",
+      "latency_ms": 1186.9260420207866,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "14c6beba-980a-47ce-a7b1-e5b5db37175b",
+      "latency_ms": 1191.6899580392055,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "174c6e01-f1f2-43cc-b50b-9ecbdd721382",
+      "latency_ms": 1192.2685409663245,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "187bd318-3144-4848-9b72-f15ebdbe9f30",
+      "latency_ms": 1118.4947500005364,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "1f9c6435-1b54-4350-b968-59ea062f3a29",
+      "latency_ms": 1197.3327090381645,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "2726500d-72c7-4c73-979d-872b1c4744f4",
+      "latency_ms": 1194.5350000169128,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "2843c2e5-7561-4672-9218-e937a62046aa",
+      "latency_ms": 1150.9213329991326,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "28d018c2-2911-4fef-a3c2-b098444f0f80",
+      "latency_ms": 1172.516375023406,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "3063ac4a-34a9-4b43-bba9-b0b7520f68c1",
+      "latency_ms": 1155.140416987706,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "30886559-58e0-408e-b346-8d91f9ed8b13",
+      "latency_ms": 1110.9807909815572,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "34b46dac-eb17-4522-a653-04dd968244b5",
+      "latency_ms": 1174.1062499932013,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "39a964c4-b362-4bc9-87c8-ff36ca417ede",
+      "latency_ms": 1186.182125005871,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "3af80cbd-7275-4fc7-8044-1d3b23e07542",
+      "latency_ms": 1177.1664170082659,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "403fe73b-1db0-4d71-8b64-6171b14d4834",
+      "latency_ms": 1171.8271249555983,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "450c889b-13c6-452d-8a55-0ff0f7a77a47",
+      "latency_ms": 1117.4624580307864,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "480ba53e-b0f2-4706-857e-938d4eb114dc",
+      "latency_ms": 1119.45904197637,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "491c8d7c-6c8c-475e-8bff-4e9cf7ed0313",
+      "latency_ms": 1148.7652080249973,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "4c3aefd8-a932-4600-8cad-ef47c37e54c2",
+      "latency_ms": 1153.0217920080759,
+      "status": "completed"
+    },
+    {
+      "cache": "miss",
+      "error": null,
+      "job_id": "4f768748-272b-41dd-9b16-64750a1fb354",
+      "latency_ms": 1099.6082079946063,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "51274df6-e292-4870-8e8d-915b5cb4fad6",
+      "latency_ms": 1195.2860410092399,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "5194bec5-2089-4a83-9a25-71b017cb8c45",
+      "latency_ms": 1152.2292500012554,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "521cc3c0-18dd-4e22-97d4-5562fe0492c3",
+      "latency_ms": 1195.7167909713462,
+      "status": "completed"
+    },
+    {
+      "cache": "miss",
+      "error": null,
+      "job_id": "54f4159c-08dc-4fc9-9408-74c54b77724d",
+      "latency_ms": 1111.5904579637572,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "556db460-912c-40dc-8154-1c3c4947ec42",
+      "latency_ms": 1115.8461250015534,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "55d4dc54-1b91-4201-90de-34aac6bbe0b1",
+      "latency_ms": 1148.5808749566786,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "5789f97d-e30b-4443-b593-99c25c2ae877",
+      "latency_ms": 1091.2797910277732,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "59e255f6-9f7e-4ec7-be49-b94550781f81",
+      "latency_ms": 1103.6740000126883,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "5bbd8966-d16e-4dce-90db-54346ef17d6b",
+      "latency_ms": 1168.1911670020781,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "5df534d4-bc21-41bf-8416-5475f4b7cbb6",
+      "latency_ms": 1172.0494580222294,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "60ce86fb-531d-4654-a647-1c499ee34137",
+      "latency_ms": 1166.9406250002794,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "638904cd-5950-4048-9a33-b40463c83c56",
+      "latency_ms": 1186.8538749986328,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "63f2e88b-8ff4-4ae4-b5c0-3d4ff17565c1",
+      "latency_ms": 1177.2928329883143,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "657a680c-e854-43f9-8611-3e74fbb600cf",
+      "latency_ms": 1141.1312500131316,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "65cf9f76-377e-4ec2-a497-d5c227da4615",
+      "latency_ms": 1183.8995409780182,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "6d505d3b-8ef4-47f4-9944-b8d7ff30d25f",
+      "latency_ms": 1186.92516698502,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "6e1e9fc2-0433-469b-add4-c94fd866a34d",
+      "latency_ms": 1156.3460829784162,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "70cae3d0-3ab0-44bd-a748-4b04471b2f36",
+      "latency_ms": 1161.496291984804,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "71ece450-9a1b-45d4-aacb-2bb2175b1fe5",
+      "latency_ms": 1174.5094590005465,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "71ff8b57-1b27-49b2-abb7-42cc2df6bcde",
+      "latency_ms": 1186.647541995626,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "764e8511-9d0f-44f2-bb13-9b17cb42b0f4",
+      "latency_ms": 1171.7832499998622,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "780c8c63-4563-40cb-8651-aa56f8c369d3",
+      "latency_ms": 1192.0997920096852,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "7d0b64c4-db53-4a1d-86b4-baa079ec286b",
+      "latency_ms": 1116.5634160279296,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "7d2a7055-277b-495e-8739-09b308aea6a4",
+      "latency_ms": 1165.0665419874713,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "7d948aa6-bb25-40d4-9d50-73e1520ea0b8",
+      "latency_ms": 1151.1888750246726,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "8565ad43-ab41-4f25-b0a7-d5d09d3f4d45",
+      "latency_ms": 1161.1911249929108,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "85b30e21-9972-494f-aba3-9b4fdfbc2463",
+      "latency_ms": 1162.72016603034,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "89ae560e-362e-4633-8664-f07ea208a796",
+      "latency_ms": 1167.3758330289274,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "89e3d313-6d36-4003-b542-bfe0c2014c0e",
+      "latency_ms": 1192.182208003942,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "8c35bea7-7fef-4fc4-8de9-abede2a29921",
+      "latency_ms": 1193.3620840427466,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "8d52664b-a224-4b02-8684-c138d72724e2",
+      "latency_ms": 1177.6448750169948,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "92a5481d-fce0-4d61-876e-bcc5f9c595b8",
+      "latency_ms": 1166.1839580046944,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "92b8868d-109a-4bd9-a5df-8cd885bd326a",
+      "latency_ms": 1172.8015420376323,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "965264b2-c5d3-42f3-9ae9-96d1ace2c1e6",
+      "latency_ms": 1090.5381250195205,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "9673f10b-c4b7-414b-8530-dbb889b89894",
+      "latency_ms": 1171.0370000218973,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "9804404f-2439-4981-8b13-511364efc4c9",
+      "latency_ms": 1191.8352920329198,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "9e92a8a4-e567-450a-8af4-023e8ee9c99c",
+      "latency_ms": 1168.4020420070738,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "9f69b6d2-1ae9-424d-bf3f-46d6bcbab6f7",
+      "latency_ms": 1194.8012909851968,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "a28fe561-3ded-467a-ace2-5ccf79087e97",
+      "latency_ms": 1183.3241250133142,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "a335e8e5-8208-4f7f-b0c8-0f4371809343",
+      "latency_ms": 1154.1482500033453,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "a9632dff-586d-4947-9cfa-75e7007e2c2c",
+      "latency_ms": 1142.316208977718,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "abc69079-6a6c-4fbe-9704-94f19c437ade",
+      "latency_ms": 1190.9830000367947,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "b563663c-583c-4b8c-acc2-8a66fad5b1a7",
+      "latency_ms": 1179.5949580264278,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "b6263bd8-1380-4e95-980f-eb7b155b07d5",
+      "latency_ms": 1156.9954159785993,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "b785a2e6-685f-420b-b7f0-5c1a76977330",
+      "latency_ms": 1152.966249966994,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "b95ab328-57a2-4069-a656-531c39e0606f",
+      "latency_ms": 1178.3470840309747,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "bd6b26ea-896d-4b61-923a-f53336b2f06f",
+      "latency_ms": 1113.2179169799201,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "beacb08e-5425-45b5-960a-0cfd7da07b3b",
+      "latency_ms": 1184.5415419666097,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "bfe55350-168c-4485-be74-c15fdf6639b1",
+      "latency_ms": 1118.8930830103345,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "c001f399-d94e-40f1-9013-86f902ab0849",
+      "latency_ms": 1161.2599999643862,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "c38f20b1-9916-409b-bd3b-dfc9414b69c8",
+      "latency_ms": 1179.7735000145622,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "c56c3208-f33a-449a-ad1f-ee266f7e66ff",
+      "latency_ms": 1160.9808340435848,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "c61b9ed5-2bda-485e-a83e-72720070a6a8",
+      "latency_ms": 1111.857250041794,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "c6e799f8-9176-43d9-b5c4-8fd102cb9319",
+      "latency_ms": 1182.9968750244007,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "c9922bf9-1a0f-4eb7-98dd-be9a023dfe9a",
+      "latency_ms": 1160.9707919997163,
+      "status": "completed"
+    },
+    {
+      "cache": "miss",
+      "error": null,
+      "job_id": "cac0743f-b24e-4b64-b3e3-04f31a1294b3",
+      "latency_ms": 1111.1450000316836,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "cd31088c-4676-4724-980e-9c4dafcc58e5",
+      "latency_ms": 1187.9556660423987,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "cd3ce94d-3f07-4437-9a8e-6ae8736c37c6",
+      "latency_ms": 1162.1092499699444,
+      "status": "completed"
+    },
+    {
+      "cache": "miss",
+      "error": null,
+      "job_id": "cdc5fabc-3d55-4a53-bbc1-bba1649e7456",
+      "latency_ms": 1152.3657090147026,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "cf9528a9-99ec-4b96-8ee4-fab79fcb3d71",
+      "latency_ms": 1187.6381670008413,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "d1ca2542-6fd2-4455-85c6-8934052d9a00",
+      "latency_ms": 1197.1628330065869,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "d3ad7aa7-c5a9-4cc5-8f17-55f1072878e0",
+      "latency_ms": 1101.2374170240946,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "d61c7615-c3e1-4759-8107-936df343d0cd",
+      "latency_ms": 1187.0668749907054,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "da8dd36f-e33c-486b-b5c8-967d4f80435f",
+      "latency_ms": 1154.445125022903,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "e25a76cd-2a38-44be-9bde-938950ea6162",
+      "latency_ms": 1179.0502080111764,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "e2da6661-8502-47df-baaa-4b4cf7e8ffea",
+      "latency_ms": 1188.0307079991326,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "e8f7c8d7-458c-4011-ac07-b710024e5807",
+      "latency_ms": 1165.034374978859,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "ed19e374-e7b4-461b-b782-dd2ab497363f",
+      "latency_ms": 1168.8512079999782,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "edc968a8-9f0a-4f9a-b800-837674f6272e",
+      "latency_ms": 1188.092875003349,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "f23d97db-0413-4476-b81e-4230350a36d9",
+      "latency_ms": 1174.038708966691,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "f896fbf3-1208-4ccd-8173-57422c4adb95",
+      "latency_ms": 1177.0655830041505,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "fa4548aa-8a33-4f17-87b9-49696a83dfa4",
+      "latency_ms": 1121.8812920269556,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "fb7e7b8b-4e5a-4891-a8b7-f8ce38e51dda",
+      "latency_ms": 1187.682459014468,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "fe4a5282-4d16-4ece-a46e-9378acb592ed",
+      "latency_ms": 1173.762959020678,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "ff657050-5011-4160-9bf3-c4f907647cb4",
+      "latency_ms": 1197.5021249963902,
+      "status": "completed"
+    },
+    {
+      "cache": "hit",
+      "error": null,
+      "job_id": "ffa1a139-ec7a-4014-8226-845ccf518f80",
+      "latency_ms": 1106.0162499779835,
+      "status": "completed"
+    }
+  ],
+  "metric_deltas": {
+    "dead_jobs": 0,
+    "failed_jobs": 0,
+    "linear_search_count": 100,
+    "processed_jobs": 100,
+    "provider_call_count": 4,
+    "semantic_cache_hits": 96,
+    "semantic_cache_misses": 4
+  },
+  "metrics_after": {
+    "dead_jobs": 0,
+    "failed_jobs": 0,
+    "faiss_search_count": 0,
+    "faiss_search_latency_ms_avg": 0,
+    "faiss_search_latency_ms_total": 0.0,
+    "linear_search_count": 100,
+    "linear_search_latency_ms_avg": 0.0157,
+    "linear_search_latency_ms_total": 1.566,
+    "max_queue_size": 200,
+    "processed_jobs": 100,
+    "processing_jobs": 0,
+    "provider_call_count": 4,
+    "provider_latency_ms_avg": 0.0,
+    "provider_latency_ms_total": 0,
+    "queued_jobs": 0,
+    "semantic_cache_hit_rate": 0.96,
+    "semantic_cache_hits": 96,
+    "semantic_cache_misses": 4
+  },
+  "metrics_before": {
+    "dead_jobs": 0,
+    "failed_jobs": 0,
+    "faiss_search_count": 0,
+    "faiss_search_latency_ms_avg": 0,
+    "faiss_search_latency_ms_total": 0.0,
+    "linear_search_count": 0,
+    "linear_search_latency_ms_avg": 0,
+    "linear_search_latency_ms_total": 0.0,
+    "max_queue_size": 200,
+    "processed_jobs": 0,
+    "processing_jobs": 0,
+    "provider_call_count": 0,
+    "provider_latency_ms_avg": 0,
+    "provider_latency_ms_total": 0,
+    "queued_jobs": 0,
+    "semantic_cache_hit_rate": 0,
+    "semantic_cache_hits": 0,
+    "semantic_cache_misses": 0
+  },
+  "prompt": "stampede-baseline-f16f0f49-3bd6-4016-b299-46ee4fcde69e",
+  "run_id": "f16f0f49-3bd6-4016-b299-46ee4fcde69e",
+  "schema_version": 1,
+  "started_at": "2026-11-10T01:32:39.738205+00:00",
+  "summary": {
+    "cache_hits": 96,
+    "cache_misses": 4,
+    "completed_jobs": 100,
+    "experiment_duration_ms": 1211.4688329747878,
+    "failed_jobs": 0,
+    "latency_ms": {
+      "count": 100,
+      "p50": 1168.296604504576,
+      "p95": 1194.825528486399,
+      "p99": 1197.3344031977467
+    },
+    "poll_error_jobs": 0,
+    "provider_calls": 4,
+    "semantic_cache_hits": 96,
+    "semantic_cache_misses": 4,
+    "submission_errors": 0,
+    "submitted_jobs": 100,
+    "timed_out_jobs": 0
+  }
+}

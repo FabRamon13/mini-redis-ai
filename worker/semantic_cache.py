@@ -177,8 +177,30 @@ def save_semantic_cache_entry(
             prune_semantic_cache(client, max_entries)
             return entry
 
+    entry = build_semantic_cache_entry(
+        prompt=prompt,
+        embedding=embedding,
+        response=response,
+        provider=provider,
+    )
+    cache_key = f"semantic_cache:{entry['entry_id']}"
+
+    try:
+        payload = json.dumps(entry)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("Failed to serialize semantic cache entry") from exc
+
+    client.set(cache_key, payload)
+    client.lpush("semantic_cache:index", cache_key)
+    prune_semantic_cache(client, max_entries)
+
+    return entry
+
+
+def build_semantic_cache_entry(prompt, embedding, response, provider):
     cache_id = str(uuid.uuid4())
-    cache_key = f"semantic_cache:{cache_id}"
+    model_id = get_model_id(provider)
+    model_revision = get_model_revision(provider)
     entry = {
         "entry_id": cache_id,
         "prompt": prompt,
@@ -193,14 +215,4 @@ def save_semantic_cache_entry(
 
     if not is_valid_semantic_entry(entry):
         raise ValueError("Invalid semantic cache entry")
-
-    try:
-        payload = json.dumps(entry)
-    except (TypeError, ValueError) as exc:
-        raise ValueError("Failed to serialize semantic cache entry") from exc
-
-    client.set(cache_key, payload)
-    client.lpush("semantic_cache:index", cache_key)
-    prune_semantic_cache(client, max_entries)
-
     return entry
