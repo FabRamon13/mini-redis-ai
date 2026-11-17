@@ -1,13 +1,14 @@
 from collections import namedtuple
 from io import BytesIO
 
-from redis_clone.exceptions import CommandError, Disconnect
+from redis_clone.exceptions import CommandError, Disconnect, ProtocolError
 
 
 Error = namedtuple("Error", ("message",))
 
 MAX_BULK_BYTES = 1024 * 1024
 MAX_ARRAY_LENGTH = 1024
+MAX_HEADER_BYTES = 1024
 
 
 class ProtocolHandler:
@@ -30,13 +31,16 @@ class ProtocolHandler:
         try:
             return self.handlers[first_byte](socket_file)
         except KeyError:
-            raise CommandError(f"Unknown protocol type: {first_byte}") 
+            raise ProtocolError(f"Unknown protocol type: {first_byte}")
 
-    def write_response(self, socket_file, data):
-    
+    def encode(self, data):
+        """Serialize one RESP value without writing to a buffered socket file."""
         buf = BytesIO()
         self._write(buf, data)
-        socket_file.write(buf.getvalue())
+        return buf.getvalue()
+
+    def write_response(self, socket_file, data):
+        socket_file.write(self.encode(data))
         ##sends through TCP conn
         socket_file.flush()
         
@@ -85,62 +89,68 @@ class ProtocolHandler:
         else:
             raise CommandError(f"unrecognized type: {type(data)}")
     
-    ##parse to handle simple strings 
+    def _read_line(self, socket_file, description):
+        line = socket_file.readline(MAX_HEADER_BYTES + 1)
+        if not line:
+            raise ProtocolError(f"Missing {description}")
+        if len(line) > MAX_HEADER_BYTES:
+            raise ProtocolError(f"{description.capitalize()} too large")
+        if not line.endswith(b"\r\n"):
+            raise ProtocolError(f"Truncated {description}")
+        return line[:-2]
+
+    ##parse to handle simple strings
     def handle_simple_string(self, socket_file):
-        return socket_file.readline().rstrip(b"\r\n")
+        return self._read_line(socket_file, "simple string")
 
     ##handling errors 
     def handle_error(self, socket_file):
-        return Error(socket_file.readline().rstrip(b"\r\n"))
+        return Error(self._read_line(socket_file, "error response"))
 
     ##handling integers 
     def handle_integer(self, socket_file):
-        return int(socket_file.readline().rstrip(b"\r\n"))
+        raw = self._read_line(socket_file, "integer")
+        try:
+            return int(raw)
+        except ValueError as exc:
+            raise ProtocolError("Invalid integer") from exc
 
     def handle_string(self, socket_file):
-        length_line = socket_file.readline()
-
-        if not length_line:
-            raise CommandError("Missing bulk string length")
-
+        length_line = self._read_line(socket_file, "bulk string length")
         try:
-            length = int(length_line.rstrip(b"\r\n"))
+            length = int(length_line)
         except ValueError:
-            raise CommandError("Invalid bulk string length")
+            raise ProtocolError("Invalid bulk string length")
 
         if length == -1:
             return None
 
         if length < -1:
-            raise CommandError("Invalid bulk string length")
+            raise ProtocolError("Invalid bulk string length")
 
         if length > MAX_BULK_BYTES:
-            raise CommandError("Bulk string too large")
+            raise ProtocolError("Bulk string too large")
 
         payload = socket_file.read(length)
         terminator = socket_file.read(2)
 
         if len(payload) != length or terminator != b"\r\n":
-            raise CommandError("Truncated bulk string")
+            raise ProtocolError("Truncated bulk string")
 
         return payload
 
     def handle_array(self, socket_file):
-        length_line = socket_file.readline()
-
-        if not length_line:
-            raise CommandError("Missing array length")
-
+        length_line = self._read_line(socket_file, "array length")
         try:
-            num_elements = int(length_line.rstrip(b"\r\n"))
+            num_elements = int(length_line)
         except ValueError:
-            raise CommandError("Invalid array length")
+            raise ProtocolError("Invalid array length")
 
         if num_elements < 0:
-            raise CommandError("Invalid array length")
+            raise ProtocolError("Invalid array length")
 
         if num_elements > MAX_ARRAY_LENGTH:
-            raise CommandError("Array too large")
+            raise ProtocolError("Array too large")
 
         return [
             self.handle_request(socket_file)
@@ -148,7 +158,17 @@ class ProtocolHandler:
         ]
 
     def handle_dict(self, socket_file):
-        num_items = int(socket_file.readline().rstrip(b"\r\n"))
+        length_line = self._read_line(socket_file, "map length")
+        try:
+            num_items = int(length_line)
+        except ValueError as exc:
+            raise ProtocolError("Invalid map length") from exc
+
+        if num_items < 0:
+            raise ProtocolError("Invalid map length")
+
+        if num_items > MAX_ARRAY_LENGTH:
+            raise ProtocolError("Map too large")
 
         elements = [
             self.handle_request(socket_file)

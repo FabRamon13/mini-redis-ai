@@ -1,7 +1,7 @@
 from io import BytesIO
 import unittest
 
-from redis_clone.exceptions import CommandError
+from redis_clone.exceptions import CommandError, ProtocolError
 from redis_clone.protocol import MAX_ARRAY_LENGTH, MAX_BULK_BYTES, ProtocolHandler
 
 
@@ -72,6 +72,22 @@ class ProtocolHandlerTests(unittest.TestCase):
             self.protocol.handle_request(BytesIO(b"+PONG\r\n")),
             b"PONG",
         )
+
+    def test_simple_string_requires_complete_terminator(self):
+        with self.assertRaisesRegex(ProtocolError, "Truncated simple string"):
+            self.protocol.handle_request(BytesIO(b"+PONG\r"))
+
+    def test_integer_rejects_invalid_payload(self):
+        with self.assertRaisesRegex(ProtocolError, "Invalid integer"):
+            self.protocol.handle_request(BytesIO(b":not-an-int\r\n"))
+
+    def test_map_rejects_truncated_nested_value(self):
+        with self.assertRaises(ProtocolError):
+            self.protocol.handle_request(BytesIO(b"%1\r\n$3\r\nkey\r\n$5\r\nva"))
+
+    def test_unknown_response_type_is_protocol_error(self):
+        with self.assertRaisesRegex(ProtocolError, "Unknown protocol type"):
+            self.protocol.handle_request(BytesIO(b"?invalid\r\n"))
 
 
 if __name__ == "__main__":
